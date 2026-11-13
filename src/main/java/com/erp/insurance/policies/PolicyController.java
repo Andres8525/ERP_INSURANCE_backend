@@ -52,6 +52,29 @@ public class PolicyController {
         return PolicyResponse.from(policies.save(policy));
     }
 
+    @RequestMapping(value = "/{policyId}", method = {RequestMethod.PUT, RequestMethod.PATCH})
+    @Transactional
+    public PolicyResponse update(@PathVariable UUID patientId, @PathVariable UUID policyId,
+                                 @Valid @RequestBody UpdatePolicyRequest request) {
+        PolicyEntity policy = requirePolicy(patientId, policyId);
+        if (request.insurer() != null) policy.setInsurer(request.insurer().trim());
+        if (request.planName() != null) policy.setPlanName(request.planName().isBlank() ? null : request.planName().trim());
+        if (request.coverageStart() != null) policy.setCoverageStart(request.coverageStart());
+        if (request.coverageEnd() != null) policy.setCoverageEnd(request.coverageEnd());
+        if (request.premiumAmount() != null) policy.setPremiumAmount(request.premiumAmount());
+        if (request.status() != null) policy.setStatus(request.status());
+        if (policy.getCoverageEnd().isBefore(policy.getCoverageStart())) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "coverageEnd must be on or after coverageStart");
+        }
+        return PolicyResponse.from(policies.save(policy));
+    }
+
+    private PolicyEntity requirePolicy(UUID patientId, UUID policyId) {
+        return policies.findById(policyId)
+                .filter(policy -> policy.getPatient().getId().equals(patientId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Policy not found for this patient"));
+    }
+
     private PatientEntity requirePatient(UUID patientId) {
         return patients.findById(patientId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Patient not found"));

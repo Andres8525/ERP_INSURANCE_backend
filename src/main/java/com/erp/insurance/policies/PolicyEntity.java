@@ -72,6 +72,11 @@ public class PolicyEntity {
     public LocalDate getCoverageEnd() { return coverageEnd; }
     public BigDecimal getPremiumAmount() { return premiumAmount; }
     public void setPremiumAmount(BigDecimal value) { premiumAmount = value; }
+    public void setInsurer(String value) { insurer = value; }
+    public void setPlanName(String value) { planName = value; }
+    public void setCoverageStart(LocalDate value) { coverageStart = value; }
+    public void setCoverageEnd(LocalDate value) { coverageEnd = value; }
+    public void setStatus(PolicyStatus value) { status = value; }
     public PolicyStatus getStatus() { return status; }
     public boolean isHasAnomalies() { return hasAnomalies; }
     public void setHasAnomalies(boolean value) { hasAnomalies = value; }
