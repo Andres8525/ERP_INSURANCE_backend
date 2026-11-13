@@ -36,6 +36,15 @@ Usuarios demo (contraseña `NexoDemo2026!`):
 3. `SPRING_PROFILES_ACTIVE=prod ./mvnw spring-boot:run`. Flyway aplica `V1` y `V2` al arrancar.
 4. El primer administrador se crea con `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD` (mínimo 16 caracteres) solo si no existe ningún usuario. Elimina esas variables después.
 
+## Docker
+
+```powershell
+docker compose up --build     # PostgreSQL 16 + API en perfil prod (Flyway V1/V2)
+docker build -t erp-insurance-api . && docker run -p 8080:8080 erp-insurance-api   # perfil demo
+```
+
+`docker-compose.yml` crea el administrador `admin@nexo.local` / `LocalAdminPassword2026!` y usa secretos de desarrollo: no lo uses tal cual en producción.
+
 ## Seguridad
 
 - JWT HS256 (`POST /api/auth/login`); todos los endpoints excepto login, OpenAPI y health exigen `Authorization: Bearer <token>`.
@@ -50,14 +59,17 @@ Esto es una base técnica, no una certificación HIPAA: producción requiere TLS
 | Método | Ruta | Descripción |
 | --- | --- | --- |
 | POST | `/api/auth/login` | `{email, password}` → `{accessToken, tokenType, expiresAt, email, role}` |
+| GET | `/api/auth/me` | Sesión actual: `{email, role, expiresAt}` |
 | GET | `/api/patients?page=0&size=25&accountStatus=` | Pacientes paginados (`PageResponse`) |
 | POST | `/api/patients` | Alta de paciente (201) |
 | GET | `/api/patients/{id}` | Detalle |
 | PUT / PATCH | `/api/patients/{id}` | Actualización parcial (solo campos enviados) |
 | DELETE | `/api/patients/{id}` | 204; 409 si tiene siniestros asociados |
 | GET | `/api/patients/{id}/policies` | Pólizas del paciente |
-| POST | `/api/patients/{id}/policies` | Alta de póliza (201) |
-| GET | `/api/claims?status=&patientId=` | Lista de siniestros |
+| POST | `/api/patients/{id}/policies` | Alta de póliza (201); 409 si su cobertura se solapa con otra póliza no terminada |
+| PUT / PATCH | `/api/patients/{id}/policies/{policyId}` | Actualización parcial de la póliza |
+| DELETE | `/api/patients/{id}/policies/{policyId}` | 204 |
+| GET | `/api/claims?status=&patientId=&priority=` | Lista de siniestros filtrable |
 | GET | `/api/claims/pipeline` | Siniestros agrupados por `OPEN`, `IN_REVIEW`, `APPROVED`, `REJECTED` |
 | GET | `/api/claims/{id}` | Detalle con servicios e historial |
 | POST | `/api/claims` | Alta (201), siempre empieza en `OPEN` |
@@ -73,7 +85,8 @@ Notas del contrato:
 - Las respuestas paginadas usan `PageResponse`: `content`, `totalElements`, `totalPages`, `number` (desde 0), `size`, `first`, `last`.
 - Jackson usa `non_null`: los campos nulos **no aparecen** en el JSON.
 - `resolve-batch` es atómico (máx. 100 IDs, solo anomalías abiertas). `AUTOCORREGIR` solo admite `Patient.email`, `Patient.phone` y `Policy.premiumAmount`; cada anomalía expone `autoCorrectable` para que la UI lo sepa de antemano.
-- Los errores siguen RFC 7807 (`ProblemDetail`: `status`, `title`, `detail`).
+- Los errores siguen RFC 7807 (`ProblemDetail`: `status`, `title`, `detail`). Las validaciones añaden `errors` (campo → mensaje); JSON mal formado, enums inválidos y campos desconocidos devuelven 400 con un `detail` explicativo; conflictos de integridad, 409.
+- Swagger UI (`/api/docs`) agrupa los endpoints por módulo y permite autenticarse con el botón *Authorize* (Bearer JWT).
 
 Los tipos TypeScript equivalentes están en `fronted/Erp_Insurance/src/app/core/api/api.models.ts`; si cambias un DTO, cambia ambos.
 
@@ -84,4 +97,9 @@ Los tipos TypeScript equivalentes están en `fronted/Erp_Insurance/src/app/core/
 ```
 
 - `ApiIntegrationTest`: levanta el perfil demo y recorre el contrato que usa el frontend (CORS desde `localhost:4200`, login JWT, anomalías + resolución masiva, CRUD de pacientes, pólizas y siniestros, 401 sin token).
-- `SensitiveDataConverterTest`: cifrado AES-GCM.
+- `SecurityRulesTest`: roles (AGENT sin auditoría), token alterado, credenciales inválidas y `/api/auth/me`.
+- `ErrorHandlingTest`: respuestas 4xx con `ProblemDetail` (nunca 500 por errores del cliente).
+- `PolicyApiTest`, `ClaimQueryTest`: solapes de cobertura, actualización/borrado de pólizas y filtros de siniestros.
+- `ClaimEntityTest`, `AutoCorrectionRuleTest`, `SensitiveDataConverterTest`: pruebas unitarias sin Spring.
+
+GitHub Actions (`.github/workflows/ci.yml`) ejecuta `./mvnw verify` en cada push a `main` y en cada pull request.
