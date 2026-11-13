@@ -1,5 +1,6 @@
 package com.erp.insurance.claims;
 
+import com.erp.insurance.domain.DomainEnums.ClaimPriority;
 import com.erp.insurance.domain.DomainEnums.ClaimStatus;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -28,8 +29,9 @@ public class ClaimsController {
 
     @GetMapping
     public List<ClaimResponse> list(@RequestParam(required = false) ClaimStatus status,
-                                    @RequestParam(required = false) UUID patientId) {
-        return claims.list(status, patientId);
+                                    @RequestParam(required = false) UUID patientId,
+                                    @RequestParam(required = false) ClaimPriority priority) {
+        return claims.list(status, patientId, priority);
     }
 
     @GetMapping("/{id}")

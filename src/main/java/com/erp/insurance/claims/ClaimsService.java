@@ -37,7 +37,7 @@ public class ClaimsService {
     }
 
     @Transactional(readOnly = true)
-    public List<ClaimResponse> list(ClaimStatus status, UUID patientId) {
+    public List<ClaimResponse> list(ClaimStatus status, UUID patientId, ClaimPriority priority) {
         List<ClaimEntity> result;
         if (patientId != null) {
             result = claims.findByPatientIdOrderByUpdatedAtDesc(patientId).stream()
@@ -47,7 +47,9 @@ public class ClaimsService {
         } else {
             result = claims.findAllByOrderByUpdatedAtDesc();
         }
-        return result.stream().map(ClaimResponse::from).toList();
+        return result.stream()
+                .filter(claim -> priority == null || claim.getPriority() == priority)
+                .map(ClaimResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
