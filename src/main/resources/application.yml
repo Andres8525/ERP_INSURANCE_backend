@@ -5,10 +5,15 @@ server:
 spring:
   application:
     name: erp-insurance-api
+  config:
+    # Variables locales en backend/.env (ignorado por git). Las variables de entorno reales tienen prioridad.
+    import: optional:file:.env[.properties]
   profiles:
     # Sin SPRING_PROFILES_ACTIVE la API arranca en modo demo (H2 en memoria + datos semilla).
-    # Para PostgreSQL usa SPRING_PROFILES_ACTIVE=prod (ver application-prod.yml).
+    # PostgreSQL propio: SPRING_PROFILES_ACTIVE=prod. Supabase: SPRING_PROFILES_ACTIVE=supabase.
     default: demo
+    group:
+      supabase: prod
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/erp_insurance}
     username: ${DB_USERNAME:erp_app}
