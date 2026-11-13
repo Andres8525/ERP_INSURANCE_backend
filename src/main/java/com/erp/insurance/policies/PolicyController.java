@@ -69,6 +69,13 @@ public class PolicyController {
         return PolicyResponse.from(policies.save(policy));
     }
 
+    @DeleteMapping("/{policyId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    public void delete(@PathVariable UUID patientId, @PathVariable UUID policyId) {
+        policies.delete(requirePolicy(patientId, policyId));
+    }
+
     private PolicyEntity requirePolicy(UUID patientId, UUID policyId) {
         return policies.findById(policyId)
                 .filter(policy -> policy.getPatient().getId().equals(patientId))
