@@ -1,0 +1,39 @@
+# Entorno local con PostgreSQL y perfil prod (Flyway + validación de esquema).
+#   docker compose up --build
+# Los secretos de abajo son SOLO para desarrollo local; en un despliegue real usa variables seguras.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: erp_insurance
+      POSTGRES_USER: erp_app
+      POSTGRES_PASSWORD: erp_local_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - erp-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp_app -d erp_insurance"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/erp_insurance
+      DB_USERNAME: erp_app
+      DB_PASSWORD: erp_local_password
+      ENCRYPTION_KEY: bG9jYWwtZG9ja2VyLWVuY3J5cHRpb24ta2V5LTMyYj0=
+      JWT_SECRET: local-docker-jwt-secret-change-me-0123456789
+      FRONTEND_ORIGINS: http://localhost:4200
+      BOOTSTRAP_ADMIN_EMAIL: admin@nexo.local
+      BOOTSTRAP_ADMIN_PASSWORD: LocalAdminPassword2026!
+    ports:
+      - "8080:8080"
+
+volumes:
+  erp-db:
