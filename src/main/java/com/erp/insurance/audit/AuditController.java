@@ -6,7 +6,7 @@ import com.erp.insurance.domain.DomainEnums.AnomalyType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import org.springframework.data.domain.Page;
+import com.erp.insurance.common.PageResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
@@ -26,12 +26,17 @@ public class AuditController {
     public AuditController(AuditService audit) { this.audit = audit; }
 
     @GetMapping("/anomalies")
-    public Page<AnomalyResponse> anomalies(@RequestParam(defaultValue = "0") @Min(0) int page,
+    public PageResponse<AnomalyResponse> anomalies(@RequestParam(defaultValue = "0") @Min(0) int page,
                                            @RequestParam(defaultValue = "25") @Min(1) @Max(100) int size,
                                            @RequestParam(required = false) AnomalySeverity severity,
                                            @RequestParam(required = false) AnomalyResolutionStatus resolutionStatus,
                                            @RequestParam(required = false) AnomalyType type) {
-        return audit.list(page, size, severity, resolutionStatus, type);
+        return PageResponse.of(audit.list(page, size, severity, resolutionStatus, type));
+    }
+
+    @GetMapping("/summary")
+    public AuditSummaryResponse summary() {
+        return audit.summary();
     }
 
     @PostMapping("/resolve-batch")
