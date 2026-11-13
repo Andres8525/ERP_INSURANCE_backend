@@ -1,5 +1,6 @@
 package com.erp.insurance.patients;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.erp.insurance.claims.ClaimRepository;
 import com.erp.insurance.domain.DomainEnums.AccountStatus;
 import com.erp.insurance.domain.DomainEnums.AcaEligibilityStatus;
@@ -21,6 +22,7 @@ import java.util.UUID;
 import static com.erp.insurance.patients.PatientDtos.*;
 
 @RestController
+@Tag(name = "Pacientes", description = "CRUD de pacientes/afiliados")
 @RequestMapping("/api/patients")
 @Validated
 public class PatientController {

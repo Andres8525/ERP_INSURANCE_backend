@@ -1,5 +1,6 @@
 package com.erp.insurance.audit;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.erp.insurance.domain.DomainEnums.AnomalyResolutionStatus;
 import com.erp.insurance.domain.DomainEnums.AnomalySeverity;
 import com.erp.insurance.domain.DomainEnums.AnomalyType;
@@ -17,6 +18,7 @@ import java.util.UUID;
 import static com.erp.insurance.audit.AuditDtos.*;
 
 @RestController
+@Tag(name = "Auditoría IA", description = "Bandeja de anomalías y resolución masiva (ADMIN/AUDITOR)")
 @RequestMapping("/api/audit")
 @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR')")
 @Validated

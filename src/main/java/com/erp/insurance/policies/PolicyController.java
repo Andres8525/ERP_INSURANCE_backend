@@ -1,5 +1,6 @@
 package com.erp.insurance.policies;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.erp.insurance.domain.DomainEnums.PolicyStatus;
 import com.erp.insurance.patients.PatientEntity;
 import com.erp.insurance.patients.PatientRepository;
@@ -18,6 +19,7 @@ import static com.erp.insurance.policies.PolicyDtos.*;
 
 /** Pólizas vinculadas a un paciente (paso 3 del stepper de afiliación y perfil del paciente). */
 @RestController
+@Tag(name = "Pólizas", description = "Pólizas vinculadas a un paciente")
 @RequestMapping("/api/patients/{patientId}/policies")
 public class PolicyController {
     private static final UUID NO_POLICY = new UUID(0L, 0L);

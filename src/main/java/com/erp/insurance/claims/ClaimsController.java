@@ -1,5 +1,6 @@
 package com.erp.insurance.claims;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.erp.insurance.domain.DomainEnums.ClaimPriority;
 import com.erp.insurance.domain.DomainEnums.ClaimStatus;
 import jakarta.validation.Valid;
@@ -13,6 +14,7 @@ import java.util.UUID;
 import static com.erp.insurance.claims.ClaimDtos.*;
 
 @RestController
+@Tag(name = "Siniestros", description = "CRUD de siniestros y pipeline Kanban")
 @RequestMapping("/api/claims")
 public class ClaimsController {
     private final ClaimsService claims;

@@ -1,5 +1,6 @@
 package com.erp.insurance.auth;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.erp.insurance.domain.DomainEnums.UserRole;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -27,6 +28,7 @@ import org.springframework.beans.factory.annotation.Value;
 import java.time.Instant;
 
 @RestController
+@Tag(name = "Autenticación", description = "Login JWT y sesión actual")
 @RequestMapping("/api/auth")
 public class AuthController {
     private final AuthenticationManager authenticationManager;
