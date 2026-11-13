@@ -31,6 +31,8 @@ public class PolicyEntity {
     private String policyNumber;
     @Column(nullable = false, length = 200)
     private String insurer;
+    @Column(name = "plan_name", length = 120)
+    private String planName;
     @Column(name = "coverage_start", nullable = false)
     private LocalDate coverageStart;
     @Column(name = "coverage_end", nullable = false)
@@ -49,14 +51,30 @@ public class PolicyEntity {
     private Instant createdAt = Instant.now();
 
     protected PolicyEntity() {}
+
+    public PolicyEntity(PatientEntity patient, String policyNumber, String insurer, String planName,
+                        LocalDate coverageStart, LocalDate coverageEnd, BigDecimal premiumAmount, PolicyStatus status) {
+        this.patient = patient;
+        this.policyNumber = policyNumber;
+        this.insurer = insurer;
+        this.planName = planName;
+        this.coverageStart = coverageStart;
+        this.coverageEnd = coverageEnd;
+        this.premiumAmount = premiumAmount;
+        this.status = status;
+    }
+
     public UUID getId() { return id; }
     public String getPolicyNumber() { return policyNumber; }
     public String getInsurer() { return insurer; }
+    public String getPlanName() { return planName; }
     public LocalDate getCoverageStart() { return coverageStart; }
     public LocalDate getCoverageEnd() { return coverageEnd; }
     public BigDecimal getPremiumAmount() { return premiumAmount; }
     public void setPremiumAmount(BigDecimal value) { premiumAmount = value; }
     public PolicyStatus getStatus() { return status; }
     public boolean isHasAnomalies() { return hasAnomalies; }
+    public void setHasAnomalies(boolean value) { hasAnomalies = value; }
     public PatientEntity getPatient() { return patient; }
+    public Instant getCreatedAt() { return createdAt; }
 }
