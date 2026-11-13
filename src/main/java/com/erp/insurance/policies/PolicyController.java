@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -19,6 +20,7 @@ import static com.erp.insurance.policies.PolicyDtos.*;
 @RestController
 @RequestMapping("/api/patients/{patientId}/policies")
 public class PolicyController {
+    private static final UUID NO_POLICY = new UUID(0L, 0L);
     private final PolicyRepository policies;
     private final PatientRepository patients;
 
@@ -42,13 +44,15 @@ public class PolicyController {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "coverageEnd must be on or after coverageStart");
         }
         PatientEntity patient = requirePatient(patientId);
+        PolicyStatus status = request.status() == null ? PolicyStatus.PENDING : request.status();
+        rejectOverlap(patientId, request.coverageStart(), request.coverageEnd(), null, status);
         String number = request.policyNumber() == null || request.policyNumber().isBlank()
                 ? "POL-" + ThreadLocalRandom.current().nextInt(100_000, 999_999)
                 : request.policyNumber().trim();
         PolicyEntity policy = new PolicyEntity(patient, number, request.insurer().trim(),
                 request.planName() == null ? null : request.planName().trim(), request.coverageStart(),
                 request.coverageEnd(), request.premiumAmount(),
-                request.status() == null ? PolicyStatus.PENDING : request.status());
+                status);
         return PolicyResponse.from(policies.save(policy));
     }
 
@@ -66,6 +70,7 @@ public class PolicyController {
         if (policy.getCoverageEnd().isBefore(policy.getCoverageStart())) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "coverageEnd must be on or after coverageStart");
         }
+        rejectOverlap(patientId, policy.getCoverageStart(), policy.getCoverageEnd(), policy.getId(), policy.getStatus());
         return PolicyResponse.from(policies.save(policy));
     }
 
@@ -74,6 +79,16 @@ public class PolicyController {
     @Transactional
     public void delete(@PathVariable UUID patientId, @PathVariable UUID policyId) {
         policies.delete(requirePolicy(patientId, policyId));
+    }
+
+    /** Un paciente no puede tener dos pólizas vigentes o pendientes con periodos que se crucen. */
+    private void rejectOverlap(UUID patientId, LocalDate start, LocalDate end, UUID excludeId, PolicyStatus status) {
+        if (status == PolicyStatus.TERMINATED) return;
+        UUID exclude = excludeId == null ? NO_POLICY : excludeId;
+        if (policies.existsOverlapping(patientId, start, end, exclude, PolicyStatus.TERMINATED)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "The patient already has a policy whose coverage overlaps " + start + " - " + end);
+        }
     }
 
     private PolicyEntity requirePolicy(UUID patientId, UUID policyId) {
