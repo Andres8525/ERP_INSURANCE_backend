@@ -1,14 +1,15 @@
 package com.erp.insurance.claims;
 
 import com.erp.insurance.domain.DomainEnums.ClaimStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static com.erp.insurance.claims.ClaimDtos.*;
 
 @RestController
 @RequestMapping("/api/claims")
@@ -19,21 +20,43 @@ public class ClaimsController {
         this.claims = claims;
     }
 
+    /** Siniestros agrupados por estado para el tablero Kanban. */
     @GetMapping("/pipeline")
     public Map<ClaimStatus, List<ClaimResponse>> pipeline() {
         return claims.pipeline();
     }
 
-    public record ClaimResponse(UUID id, String claimNumber, String description, ClaimStatus status,
-                                PatientBrief patient, List<ClaimServiceBrief> services, Instant createdAt) {
-        static ClaimResponse from(ClaimEntity claim) {
-            var patient = claim.getPatient();
-            return new ClaimResponse(claim.getId(), claim.getClaimNumber(), claim.getDescription(), claim.getStatus(),
-                    new PatientBrief(patient.getId(), patient.getFirstName(), patient.getLastName()),
-                    claim.getServices().stream().map(service -> new ClaimServiceBrief(service.getId(), service.getName(), service.getDetails(), service.getScheduledAt())).toList(),
-                    claim.getCreatedAt());
-        }
+    @GetMapping
+    public List<ClaimResponse> list(@RequestParam(required = false) ClaimStatus status,
+                                    @RequestParam(required = false) UUID patientId) {
+        return claims.list(status, patientId);
     }
-    public record PatientBrief(UUID id, String firstName, String lastName) {}
-    public record ClaimServiceBrief(UUID id, String name, String details, Instant scheduledAt) {}
+
+    @GetMapping("/{id}")
+    public ClaimResponse get(@PathVariable UUID id) {
+        return claims.get(id);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ClaimResponse create(@Valid @RequestBody CreateClaimRequest request) {
+        return claims.create(request);
+    }
+
+    @RequestMapping(value = "/{id}", method = {RequestMethod.PUT, RequestMethod.PATCH})
+    public ClaimResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateClaimRequest request) {
+        return claims.update(id, request);
+    }
+
+    /** Mueve una tarjeta entre columnas del Kanban y registra el cambio en el historial. */
+    @PatchMapping("/{id}/status")
+    public ClaimResponse changeStatus(@PathVariable UUID id, @Valid @RequestBody ChangeStatusRequest request) {
+        return claims.changeStatus(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
+        claims.delete(id);
+    }
 }
