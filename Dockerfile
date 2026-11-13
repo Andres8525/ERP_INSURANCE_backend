@@ -14,5 +14,7 @@ RUN useradd --system --uid 10001 erp
 COPY --from=build /app/target/insurance-api-*.jar app.jar
 USER erp
 EXPOSE 8080
-# Sin SPRING_PROFILES_ACTIVE arranca el perfil demo; usa "prod" con PostgreSQL (ver docker-compose.yml).
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "/app/app.jar"]
+# Opciones de la JVM; Render las sobrescribe desde render.yaml. El puerto llega en PORT (o SERVER_PORT).
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75"
+# Sin SPRING_PROFILES_ACTIVE arranca el perfil demo; "supabase" o "prod" usan PostgreSQL.
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

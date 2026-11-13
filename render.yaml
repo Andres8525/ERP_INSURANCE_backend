@@ -1,0 +1,43 @@
+# Blueprint de Render: https://render.com/docs/blueprint-spec
+# Render construye la imagen con el Dockerfile y asigna el puerto en la variable PORT.
+# Las variables con "sync: false" se piden en el panel al crear el servicio (no se guardan en git).
+services:
+  - type: web
+    name: erp-insurance-api
+    runtime: docker
+    plan: free
+    # Misma región que Supabase (us-west-2 / Oregón) para reducir la latencia con la base de datos.
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    autoDeploy: true
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: supabase
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SCHEMA
+        value: erp
+      - key: DB_POOL_SIZE
+        value: "5"
+      # Debe ser LA MISMA que en backend/.env: los datos de Supabase están cifrados con ella.
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_TTL_MINUTES
+        value: "60"
+      # URL del frontend (Vercel), p. ej. https://erp-insurance.vercel.app,https://*.vercel.app
+      - key: FRONTEND_ORIGINS
+        sync: false
+      # Los datos demo ya están en Supabase; no volver a sembrar.
+      - key: DEMO_SEED
+        value: "false"
+      # Plan free = 512 MB de RAM.
+      - key: JAVA_OPTS
+        value: "-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -Xss512k -XX:TieredStopAtLevel=1"
