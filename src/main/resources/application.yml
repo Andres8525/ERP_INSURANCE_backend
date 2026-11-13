@@ -1,6 +1,9 @@
 server:
-  port: ${SERVER_PORT:8080}
+  # SERVER_PORT (local) > PORT (lo asigna Render y otros PaaS) > 8080
+  port: ${SERVER_PORT:${PORT:8080}}
   shutdown: graceful
+  # Detrás del proxy HTTPS de Render: respeta X-Forwarded-Proto/Host.
+  forward-headers-strategy: framework
 
 spring:
   application:
@@ -52,6 +55,7 @@ app:
   encryption:
     key: ${ENCRYPTION_KEY:}
   cors:
+    # Orígenes o patrones separados por coma, p. ej. https://mi-app.vercel.app,https://*.vercel.app
     allowed-origins: ${FRONTEND_ORIGINS:http://localhost:4200,http://localhost:3000}
   bootstrap:
     admin-email: ${BOOTSTRAP_ADMIN_EMAIL:}
