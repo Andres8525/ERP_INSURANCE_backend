@@ -1,0 +1,37 @@
+# Perfil Supabase (PostgreSQL gestionado). Se activa con SPRING_PROFILES_ACTIVE=supabase y
+# arrastra el perfil prod (Flyway + ddl-auto=validate) mediante spring.profiles.group en application.yml.
+#
+# Las tablas se crean en el esquema "erp" y NO en "public": Supabase publica "public" en su
+# Data API (REST/GraphQL) y los datos de pacientes quedarían expuestos a la clave anon.
+#
+# DB_URL recomendado (Session pooler, IPv4, puerto 5432):
+#   jdbc:postgresql://aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
+# DB_USERNAME en el pooler: postgres.<project-ref>
+spring:
+  datasource:
+    hikari:
+      schema: ${DB_SCHEMA:erp}
+      # El pooler de Supabase limita las conexiones por cliente: pool pequeño.
+      maximum-pool-size: ${DB_POOL_SIZE:5}
+      minimum-idle: 1
+      connection-timeout: 20000
+      idle-timeout: 120000
+      keepalive-time: 300000
+      max-lifetime: 1500000
+      data-source-properties:
+        sslmode: ${DB_SSLMODE:require}
+        ApplicationName: erp-insurance-api
+  flyway:
+    schemas: ${DB_SCHEMA:erp}
+    default-schema: ${DB_SCHEMA:erp}
+    create-schemas: true
+  jpa:
+    properties:
+      hibernate:
+        default_schema: ${DB_SCHEMA:erp}
+
+app:
+  demo:
+    # true solo para la presentación: carga los datos ficticios una vez (si no hay usuarios).
+    # Los datos quedan cifrados con ENCRYPTION_KEY: no cambies esa clave después.
+    seed: ${DEMO_SEED:false}
