@@ -1,58 +1,87 @@
 # ERP Insurance API
 
-API REST con Spring Boot 3, Java 21 y PostgreSQL para un ERP de corredora de seguros medicos ACA. Flyway administra el esquema; Hibernate no crea ni modifica tablas automaticamente.
+API REST con Spring Boot 3.5, Java 21 y Maven para un ERP de corredora de seguros médicos ACA.
 
-## Inicio local
+## Perfiles
 
-1. Crea una base PostgreSQL y copia `.env.example` a `.env` (exporta sus valores al entorno de la aplicacion).
-2. Define `ENCRYPTION_KEY` como una clave aleatoria de 32 bytes codificada en Base64 y `JWT_SECRET` como minimo 32 bytes aleatorios. Nunca publiques secretos.
-3. Ejecuta `mvn spring-boot:run` desde `backend`.
-4. Swagger UI: `http://localhost:8080/api/docs`.
+| Perfil | Base de datos | Esquema | Datos | Cuándo usarlo |
+| --- | --- | --- | --- | --- |
+| `demo` (por defecto) | H2 en memoria | Hibernate `create-drop` | `DemoDataSeeder` carga usuarios, pacientes, pólizas, siniestros y anomalías | Desarrollo y presentación. No necesita variables de entorno. |
+| `prod` | PostgreSQL | Flyway (`db/migration`) + `ddl-auto: validate` | Ninguno | Despliegue real. Requiere las variables de [.env.example](.env.example). |
 
-Flyway aplica `V1__initial_schema.sql` al arranque. Para crear el primer administrador, define temporalmente `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD` (minimo 16 caracteres); el arranque crea la cuenta solo si no existe ningun usuario. Elimina ambos valores despues de provisionarla.
+Los secretos del perfil demo están en [application-demo.yml](src/main/resources/application-demo.yml) y son públicos: no lo uses con datos reales.
 
-`FRONTEND_ORIGINS` es una lista separada por comas. Los origenes locales Angular/React se permiten por defecto; en produccion configura solo los origenes exactos. Todos los endpoints excepto login, OpenAPI y health requieren JWT Bearer.
+## Inicio rápido (demo)
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run      # Windows
+./mvnw spring-boot:run          # Linux/macOS
+```
+
+Requiere JDK 21 (`JAVA_HOME`). El wrapper descarga Maven 3.9.12 si no está instalado. La API escucha en `http://localhost:8080` (cámbialo con `SERVER_PORT`) y Swagger UI queda en `http://localhost:8080/api/docs`.
+
+Usuarios demo (contraseña `NexoDemo2026!`):
+
+| Email | Rol | Auditoría IA |
+| --- | --- | --- |
+| `admin@nexo.demo` | ADMIN | Sí |
+| `auditor@nexo.demo` | AUDITOR | Sí |
+| `agente@nexo.demo` | AGENT | No (403) |
+
+## Inicio con PostgreSQL (prod)
+
+1. Crea la base y exporta las variables de [.env.example](.env.example) (Spring no lee archivos `.env`).
+2. `ENCRYPTION_KEY`: 32 bytes aleatorios en Base64 (`openssl rand -base64 32`). `JWT_SECRET`: al menos 32 bytes.
+3. `SPRING_PROFILES_ACTIVE=prod ./mvnw spring-boot:run`. Flyway aplica `V1` y `V2` al arrancar.
+4. El primer administrador se crea con `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD` (mínimo 16 caracteres) solo si no existe ningún usuario. Elimina esas variables después.
+
+## Seguridad
+
+- JWT HS256 (`POST /api/auth/login`); todos los endpoints excepto login, OpenAPI y health exigen `Authorization: Bearer <token>`.
+- CORS por lista blanca (`FRONTEND_ORIGINS`, por defecto `http://localhost:4200,http://localhost:3000`); métodos GET, POST, PUT, PATCH, DELETE y OPTIONS.
+- `/api/audit/**` solo para roles ADMIN y AUDITOR.
+- Nombres, email, teléfono, fecha de nacimiento, ingreso, número de póliza, descripciones y valores de anomalías se cifran con AES-256-GCM en la capa JPA; el email se busca mediante un HMAC separado. Contraseñas con BCrypt.
+
+Esto es una base técnica, no una certificación HIPAA: producción requiere TLS, gestión de secretos, aislamiento por organización, auditoría de accesos a PHI, retención, backups, respuesta a incidentes y BAAs.
 
 ## Endpoints
 
-- `POST /api/auth/login`: valida email y contrasena; devuelve token JWT de corta duracion.
-- `POST /api/patients`, `GET /api/patients`, `GET /api/patients/{id}`, `PATCH /api/patients/{id}`: stepper de afiliacion. El listado acepta `page`, `size` y `accountStatus`.
-- `GET /api/claims/pipeline`: siniestros agrupados por `OPEN`, `IN_REVIEW`, `APPROVED` y `REJECTED`.
-- `GET /api/audit/anomalies`: anomalías paginadas; filtros `page`, `size`, `severity`, `resolutionStatus` y `type`. Acceso solo ADMIN/AUDITOR.
-- `POST /api/audit/resolve-batch`: `{ "ids": ["uuid"], "action": "ARCHIVAR_DEFINITIVO" | "AUTOCORREGIR" }`. Maximo 100 IDs, transaccion atomica y solo anomalías abiertas. La autocorreccion permite `Patient.email`, `Patient.phone` y `Policy.premiumAmount`; propuestas no permitidas o incompletas revierten el lote entero.
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| POST | `/api/auth/login` | `{email, password}` → `{accessToken, tokenType, expiresAt, email, role}` |
+| GET | `/api/patients?page=0&size=25&accountStatus=` | Pacientes paginados (`PageResponse`) |
+| POST | `/api/patients` | Alta de paciente (201) |
+| GET | `/api/patients/{id}` | Detalle |
+| PUT / PATCH | `/api/patients/{id}` | Actualización parcial (solo campos enviados) |
+| DELETE | `/api/patients/{id}` | 204; 409 si tiene siniestros asociados |
+| GET | `/api/patients/{id}/policies` | Pólizas del paciente |
+| POST | `/api/patients/{id}/policies` | Alta de póliza (201) |
+| GET | `/api/claims?status=&patientId=` | Lista de siniestros |
+| GET | `/api/claims/pipeline` | Siniestros agrupados por `OPEN`, `IN_REVIEW`, `APPROVED`, `REJECTED` |
+| GET | `/api/claims/{id}` | Detalle con servicios e historial |
+| POST | `/api/claims` | Alta (201), siempre empieza en `OPEN` |
+| PUT / PATCH | `/api/claims/{id}` | Actualización parcial; un cambio de estado queda en el historial |
+| PATCH | `/api/claims/{id}/status` | `{status, note?}`: mover tarjeta del Kanban |
+| DELETE | `/api/claims/{id}` | 204 |
+| GET | `/api/audit/anomalies?page=0&size=25&severity=&resolutionStatus=&type=` | Anomalías paginadas (≥5 en demo) |
+| GET | `/api/audit/summary` | `{open, critical, review, resolvedThisMonth}` |
+| POST | `/api/audit/resolve-batch` | `{ids: [uuid], action: "ARCHIVAR_DEFINITIVO" \| "AUTOCORREGIR"}` → 200 `{processed, action, ids}` |
 
-Las respuestas paginadas siguen el formato Spring `Page`: `content`, `totalElements`, `totalPages`, `number`, `size` y `first/last`.
+Notas del contrato:
 
-Ejemplos para el frontend:
+- Las respuestas paginadas usan `PageResponse`: `content`, `totalElements`, `totalPages`, `number` (desde 0), `size`, `first`, `last`.
+- Jackson usa `non_null`: los campos nulos **no aparecen** en el JSON.
+- `resolve-batch` es atómico (máx. 100 IDs, solo anomalías abiertas). `AUTOCORREGIR` solo admite `Patient.email`, `Patient.phone` y `Policy.premiumAmount`; cada anomalía expone `autoCorrectable` para que la UI lo sepa de antemano.
+- Los errores siguen RFC 7807 (`ProblemDetail`: `status`, `title`, `detail`).
 
-```json
-POST /api/patients
-{
-	"firstName": "Ana",
-	"lastName": "Lopez",
-	"email": "ana@example.test",
-	"phone": "+1-555-0100",
-	"dateOfBirth": "1990-04-12",
-	"householdIncome": 42000.00,
-	"acaEligibilityStatus": "PENDING",
-	"accountStatus": "PENDING"
-}
+Los tipos TypeScript equivalentes están en `fronted/Erp_Insurance/src/app/core/api/api.models.ts`; si cambias un DTO, cambia ambos.
+
+## Pruebas
+
+```powershell
+.\mvnw.cmd test
 ```
 
-```json
-POST /api/audit/resolve-batch
-{
-	"ids": ["a7e93fc7-a6c6-468b-a0bd-f538aeb1dd75"],
-	"action": "ARCHIVAR_DEFINITIVO"
-}
-```
-
-`GET /api/audit/anomalies?page=0&size=25&severity=RED&resolutionStatus=OPEN` devuelve `content` con campos `affectedRecordType`, `affectedRecordId` y sugerencia opcional. Los números de página comienzan en cero, como Spring Data.
-
-Pruebas y build: `mvn test` desde `backend`.
-
-## Seguridad y limites de cumplimiento
-
-Nombres, email, telefono, fecha de nacimiento, ingreso del hogar, numero de poliza, descripcion de siniestro y valores sugeridos se cifran con AES-256-GCM en la capa JPA. El email se busca mediante un HMAC aparte para no guardar un indice reversible. Contrasenas se almacenan con BCrypt; JWT firma HS256. CORS usa allowlist y las rutas de auditoria requieren rol. La clave no se persiste junto a los datos.
-
-Esto es una base tecnica, no una certificacion HIPAA. Produccion requiere TLS, gestion de secretos, control de acceso por tenant/organizacion, auditoria de acceso PHI, retencion, backups probados, respuesta a incidentes, BAAs y revision de seguridad/privacidad. La autorizacion por organizacion y el ciclo completo de auditoria deben completarse antes de almacenar PHI real.
+- `ApiIntegrationTest`: levanta el perfil demo y recorre el contrato que usa el frontend (CORS desde `localhost:4200`, login JWT, anomalías + resolución masiva, CRUD de pacientes, pólizas y siniestros, 401 sin token).
+- `SensitiveDataConverterTest`: cifrado AES-GCM.
