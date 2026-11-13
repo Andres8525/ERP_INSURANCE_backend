@@ -25,6 +25,15 @@ public final class PolicyDtos {
             @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2) BigDecimal premiumAmount,
             PolicyStatus status) {}
 
+    /** Actualización parcial de una póliza: solo se modifican los campos enviados. */
+    public record UpdatePolicyRequest(
+            @Size(min = 1, max = 200) String insurer,
+            @Size(max = 120) String planName,
+            LocalDate coverageStart,
+            LocalDate coverageEnd,
+            @DecimalMin("0.00") @Digits(integer = 10, fraction = 2) BigDecimal premiumAmount,
+            PolicyStatus status) {}
+
     public record PolicyResponse(UUID id, UUID patientId, String policyNumber, String insurer, String planName,
                                  LocalDate coverageStart, LocalDate coverageEnd, BigDecimal premiumAmount,
                                  PolicyStatus status, boolean hasAnomalies, Instant createdAt) {
