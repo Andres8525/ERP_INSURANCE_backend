@@ -20,7 +20,9 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,14 +38,20 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserRepository users;
     private final JwtEncoder jwtEncoder;
+    private final PasswordEncoder passwordEncoder;
     private final long ttlMinutes;
+    private final boolean registrationEnabled;
 
     public AuthController(AuthenticationManager authenticationManager, UserRepository users, JwtEncoder jwtEncoder,
-                          @Value("${app.security.jwt-ttl-minutes:15}") long ttlMinutes) {
+                          PasswordEncoder passwordEncoder,
+                          @Value("${app.security.jwt-ttl-minutes:15}") long ttlMinutes,
+                          @Value("${app.security.allow-registration:true}") boolean registrationEnabled) {
         this.authenticationManager = authenticationManager;
         this.users = users;
         this.jwtEncoder = jwtEncoder;
+        this.passwordEncoder = passwordEncoder;
         this.ttlMinutes = ttlMinutes;
+        this.registrationEnabled = registrationEnabled;
     }
 
     @Operation(summary = "Iniciar sesión", description = "Valida email y contraseña y devuelve un JWT HS256 con el rol del usuario.")
@@ -55,21 +63,47 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(request.email().trim().toLowerCase(), request.password()));
             UserEntity user = users.findByEmailIgnoreCaseAndActiveTrue(authentication.getName())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
-            Instant now = Instant.now();
-            Instant expiry = now.plusSeconds(ttlMinutes * 60);
-            JwtClaimsSet claims = JwtClaimsSet.builder()
-                    .issuer("erp-insurance-api")
-                    .issuedAt(now)
-                    .expiresAt(expiry)
-                    .subject(user.getId().toString())
-                    .claim("email", user.getEmail())
-                    .claim("role", user.getRole().name())
-                    .build();
-            return new TokenResponse(jwtEncoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims)).getTokenValue(), "Bearer", expiry,
-                    user.getEmail(), user.getRole());
+            return issueToken(user);
         } catch (org.springframework.security.core.AuthenticationException exception) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
         }
+    }
+
+    /**
+     * Autoregistro: crea una cuenta con rol AGENT (sin acceso a auditoría ni administración)
+     * y devuelve el token, de modo que el usuario queda con la sesión iniciada.
+     * Se desactiva con ALLOW_REGISTRATION=false.
+     */
+    @Operation(summary = "Crear cuenta", description = "Registra un usuario con rol AGENT y devuelve su JWT.")
+    @SecurityRequirements
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TokenResponse register(@Valid @RequestBody RegisterRequest request) {
+        if (!registrationEnabled) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Registration is disabled");
+        }
+        String email = request.email().trim().toLowerCase();
+        if (users.existsByEmailIgnoreCase(email)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
+        }
+        UserEntity user = users.save(new UserEntity(email, passwordEncoder.encode(request.password()), UserRole.AGENT));
+        return issueToken(user);
+    }
+
+    private TokenResponse issueToken(UserEntity user) {
+        Instant now = Instant.now();
+        Instant expiry = now.plusSeconds(ttlMinutes * 60);
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer("erp-insurance-api")
+                .issuedAt(now)
+                .expiresAt(expiry)
+                .subject(user.getId().toString())
+                .claim("email", user.getEmail())
+                .claim("role", user.getRole().name())
+                .build();
+        String token = jwtEncoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
+                .getTokenValue();
+        return new TokenResponse(token, "Bearer", expiry, user.getEmail(), user.getRole());
     }
 
     /** Datos de la sesión actual a partir del JWT (útil para validar un token guardado en el cliente). */
@@ -83,6 +117,8 @@ public class AuthController {
 
     public record LoginRequest(@Email @NotBlank @Size(max = 320) String email,
                                @NotBlank @Size(min = 12, max = 128) String password) {}
+    public record RegisterRequest(@Email @NotBlank @Size(max = 320) String email,
+                                  @NotBlank @Size(min = 12, max = 128) String password) {}
     public record SessionResponse(String email, UserRole role, Instant expiresAt) {}
     public record TokenResponse(String accessToken, String tokenType, Instant expiresAt, String email, UserRole role) {}
 }

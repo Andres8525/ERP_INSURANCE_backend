@@ -76,7 +76,7 @@ public class SecurityConfiguration {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/docs", "/api/docs/**", "/api/openapi/**", "/actuator/health").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/docs", "/api/docs/**", "/api/openapi/**", "/actuator/health").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter)))
