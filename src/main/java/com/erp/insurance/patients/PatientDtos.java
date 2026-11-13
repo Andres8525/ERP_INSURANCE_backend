@@ -41,7 +41,4 @@ public final class PatientDtos {
                     patient.getAcaEligibilityStatus(), patient.getAccountStatus(), patient.getCreatedAt());
         }
     }
-
-    public record PolicySummary(UUID id, String insurer, String coverageStart, String coverageEnd,
-                                BigDecimal premiumAmount, String status, boolean hasAnomalies) {}
 }

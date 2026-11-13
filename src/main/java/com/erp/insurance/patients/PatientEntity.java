@@ -35,7 +35,7 @@ public class PatientEntity {
     @Convert(converter = SensitiveDataConverter.class)
     @Column(nullable = false, columnDefinition = "text")
     private String email;
-    @Column(name = "email_lookup_hash", nullable = false, unique = true, length = 64)
+    @Column(name = "email_lookup_hash", nullable = false, unique = true, length = 64, columnDefinition = "char(64)")
     private String emailLookupHash;
     @Convert(converter = SensitiveDataConverter.class)
     @Column(columnDefinition = "text")
@@ -59,7 +59,7 @@ public class PatientEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
 
-    protected PatientEntity() {}
+    public PatientEntity() {}
     public UUID getId() { return id; }
     public String getFirstName() { return firstName; }
     public void setFirstName(String value) { firstName = value; }
