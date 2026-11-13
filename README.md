@@ -44,6 +44,21 @@ Usuarios demo (contraseña `NexoDemo2026!`):
 
 Las tablas viven en el esquema `erp`, no en `public`, para que la Data API de Supabase no las exponga. Guarda `ENCRYPTION_KEY` en un lugar seguro: sin ella los datos cifrados no se pueden leer.
 
+## Despliegue en Render
+
+El repo incluye [render.yaml](render.yaml) (Blueprint): servicio web Docker, plan free, región Oregón (la misma que Supabase) y health check en `/actuator/health`.
+
+1. En Render: **New → Blueprint**, conecta este repositorio y acepta `render.yaml`.
+2. Completa las variables marcadas como secretas: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `ENCRYPTION_KEY` (la **misma** del `.env` local), `JWT_SECRET` y `FRONTEND_ORIGINS`.
+3. Render construye la imagen y arranca la API; la URL pública queda como `https://<servicio>.onrender.com`.
+
+Notas:
+
+- La app escucha en el puerto que Render entrega en `PORT` y respeta las cabeceras `X-Forwarded-*` de su proxy HTTPS.
+- `FRONTEND_ORIGINS` acepta patrones: `https://mi-app.vercel.app,https://*.vercel.app` cubre producción y vistas previas.
+- El plan free se suspende tras ~15 min sin tráfico; la primera petición posterior tarda alrededor de un minuto.
+- `JAVA_OPTS` ajusta la JVM a los 512 MB del plan free.
+
 ## Docker
 
 ```powershell
