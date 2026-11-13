@@ -1,0 +1,8 @@
+# Perfil de producción: PostgreSQL + Flyway. Todos los secretos llegan por variables de entorno
+# (ver backend/.env.example). Hibernate solo valida el esquema creado por las migraciones.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
