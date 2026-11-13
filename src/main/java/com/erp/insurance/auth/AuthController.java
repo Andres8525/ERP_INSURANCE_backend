@@ -1,5 +1,6 @@
 package com.erp.insurance.auth;
 
+import com.erp.insurance.domain.DomainEnums.UserRole;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -8,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
@@ -53,7 +56,8 @@ public class AuthController {
                     .claim("email", user.getEmail())
                     .claim("role", user.getRole().name())
                     .build();
-            return new TokenResponse(jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue(), "Bearer", expiry);
+            return new TokenResponse(jwtEncoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims)).getTokenValue(), "Bearer", expiry,
+                    user.getEmail(), user.getRole());
         } catch (org.springframework.security.core.AuthenticationException exception) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
         }
@@ -61,5 +65,5 @@ public class AuthController {
 
     public record LoginRequest(@Email @NotBlank @Size(max = 320) String email,
                                @NotBlank @Size(min = 12, max = 128) String password) {}
-    public record TokenResponse(String accessToken, String tokenType, Instant expiresAt) {}
+    public record TokenResponse(String accessToken, String tokenType, Instant expiresAt, String email, UserRole role) {}
 }
