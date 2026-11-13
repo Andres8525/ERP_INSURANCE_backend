@@ -14,7 +14,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -35,6 +37,8 @@ public class PatientEntity {
     @Convert(converter = SensitiveDataConverter.class)
     @Column(nullable = false, columnDefinition = "text")
     private String email;
+    /** CHAR(64) en la migración V1: se declara el tipo JDBC para que la validación de Hibernate coincida. */
+    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "email_lookup_hash", nullable = false, unique = true, length = 64, columnDefinition = "char(64)")
     private String emailLookupHash;
     @Convert(converter = SensitiveDataConverter.class)
