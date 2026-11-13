@@ -1,5 +1,7 @@
 package com.erp.insurance.auth;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.erp.insurance.domain.DomainEnums.UserRole;
 import jakarta.validation.Valid;
@@ -44,6 +46,8 @@ public class AuthController {
         this.ttlMinutes = ttlMinutes;
     }
 
+    @Operation(summary = "Iniciar sesión", description = "Valida email y contraseña y devuelve un JWT HS256 con el rol del usuario.")
+    @SecurityRequirements
     @PostMapping("/login")
     public TokenResponse login(@Valid @RequestBody LoginRequest request) {
         try {
@@ -69,6 +73,7 @@ public class AuthController {
     }
 
     /** Datos de la sesión actual a partir del JWT (útil para validar un token guardado en el cliente). */
+    @Operation(summary = "Sesión actual", description = "Email, rol y expiración del token enviado.")
     @GetMapping("/me")
     public SessionResponse me(JwtAuthenticationToken authentication) {
         Jwt jwt = authentication.getToken();

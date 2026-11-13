@@ -1,5 +1,6 @@
 package com.erp.insurance.audit;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.erp.insurance.domain.DomainEnums.AnomalyResolutionStatus;
 import com.erp.insurance.domain.DomainEnums.AnomalySeverity;
@@ -27,6 +28,7 @@ public class AuditController {
 
     public AuditController(AuditService audit) { this.audit = audit; }
 
+    @Operation(summary = "Listar anomalías", description = "Hallazgos del motor de IA (simulado), paginados y filtrables por severidad, estado y tipo.")
     @GetMapping("/anomalies")
     public PageResponse<AnomalyResponse> anomalies(@RequestParam(defaultValue = "0") @Min(0) int page,
                                            @RequestParam(defaultValue = "25") @Min(1) @Max(100) int size,
@@ -36,11 +38,13 @@ public class AuditController {
         return PageResponse.of(audit.list(page, size, severity, resolutionStatus, type));
     }
 
+    @Operation(summary = "Resumen de la bandeja", description = "Abiertas, críticas (RED), en revisión (YELLOW) y resueltas este mes.")
     @GetMapping("/summary")
     public AuditSummaryResponse summary() {
         return audit.summary();
     }
 
+    @Operation(summary = "Resolver anomalías en lote", description = "ARCHIVAR_DEFINITIVO o AUTOCORREGIR hasta 100 anomalías abiertas en una sola transacción; si una falla, se revierte todo el lote.")
     @PostMapping("/resolve-batch")
     public ResolveBatchResponse resolveBatch(@Valid @RequestBody ResolveBatchRequest request,
                                               JwtAuthenticationToken authentication) {

@@ -1,5 +1,6 @@
 package com.erp.insurance.claims;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.erp.insurance.domain.DomainEnums.ClaimPriority;
 import com.erp.insurance.domain.DomainEnums.ClaimStatus;
@@ -24,6 +25,7 @@ public class ClaimsController {
     }
 
     /** Siniestros agrupados por estado para el tablero Kanban. */
+    @Operation(summary = "Pipeline Kanban", description = "Siniestros agrupados por OPEN, IN_REVIEW, APPROVED y REJECTED.")
     @GetMapping("/pipeline")
     public Map<ClaimStatus, List<ClaimResponse>> pipeline() {
         return claims.pipeline();
@@ -53,6 +55,7 @@ public class ClaimsController {
     }
 
     /** Mueve una tarjeta entre columnas del Kanban y registra el cambio en el historial. */
+    @Operation(summary = "Cambiar estado", description = "Mueve el siniestro de columna y registra el cambio en su historial.")
     @PatchMapping("/{id}/status")
     public ClaimResponse changeStatus(@PathVariable UUID id, @Valid @RequestBody ChangeStatusRequest request) {
         return claims.changeStatus(id, request);
