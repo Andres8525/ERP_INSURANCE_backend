@@ -36,6 +36,12 @@ public interface DataAnomalyRepository extends JpaRepository<DataAnomalyEntity, 
     Page<DataAnomalyEntity> findByType(
             com.erp.insurance.domain.DomainEnums.AnomalyType type, Pageable pageable);
 
+    long countByResolutionStatus(AnomalyResolutionStatus status);
+    long countBySeverityAndResolutionStatus(com.erp.insurance.domain.DomainEnums.AnomalySeverity severity,
+                                            AnomalyResolutionStatus status);
+    long countByResolutionStatusInAndResolvedAtGreaterThanEqual(List<AnomalyResolutionStatus> statuses,
+                                                                java.time.Instant since);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from DataAnomalyEntity a where a.id in :ids")
     List<DataAnomalyEntity> findAllByIdForUpdate(@Param("ids") List<UUID> ids);
