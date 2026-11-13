@@ -32,6 +32,13 @@ public class ClaimServiceEntity {
     private ClaimEntity claim;
 
     protected ClaimServiceEntity() {}
+
+    ClaimServiceEntity(ClaimEntity claim, String name, String details, Instant scheduledAt) {
+        this.claim = claim;
+        this.name = name;
+        this.details = details;
+        this.scheduledAt = scheduledAt;
+    }
     public UUID getId() { return id; }
     public String getName() { return name; }
     public String getDetails() { return details; }
