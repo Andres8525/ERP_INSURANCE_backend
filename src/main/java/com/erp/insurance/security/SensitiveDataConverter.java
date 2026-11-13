@@ -69,17 +69,6 @@ public class SensitiveDataConverter implements AttributeConverter<String, String
 
     private SecretKeySpec key() {
         if (testKey != null) return new SecretKeySpec(testKey, "AES");
-        String encoded = System.getenv("ENCRYPTION_KEY");
-        if (encoded == null || encoded.isBlank()) {
-            throw new IllegalStateException("ENCRYPTION_KEY is required to access encrypted data");
-        }
-        byte[] bytes;
-        try {
-            bytes = Base64.getDecoder().decode(encoded);
-        } catch (IllegalArgumentException exception) {
-            throw new IllegalStateException("ENCRYPTION_KEY must be Base64", exception);
-        }
-        if (bytes.length != 32) throw new IllegalStateException("ENCRYPTION_KEY must decode to exactly 32 bytes");
-        return new SecretKeySpec(bytes, "AES");
+        return new SecretKeySpec(EncryptionKeys.current(), "AES");
     }
 }
