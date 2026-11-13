@@ -4,6 +4,7 @@ import com.erp.insurance.auth.UserEntity;
 import com.erp.insurance.auth.UserRepository;
 import com.erp.insurance.domain.DomainEnums.AffectedRecordType;
 import com.erp.insurance.domain.DomainEnums.AnomalyResolutionStatus;
+import com.erp.insurance.domain.DomainEnums.AnomalySeverity;
 import com.erp.insurance.domain.DomainEnums.BatchResolutionAction;
 import com.erp.insurance.patients.PatientEntity;
 import com.erp.insurance.patients.PatientRepository;
@@ -19,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,7 +44,7 @@ public class AuditService {
 
     @Transactional(readOnly = true)
     public Page<AnomalyResponse> list(int page, int size,
-                                      com.erp.insurance.domain.DomainEnums.AnomalySeverity severity,
+                                      AnomalySeverity severity,
                                       AnomalyResolutionStatus resolutionStatus,
                                       com.erp.insurance.domain.DomainEnums.AnomalyType type) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -55,6 +58,29 @@ public class AuditService {
         else if (type != null) result = anomalies.findByType(type, pageable);
         else result = anomalies.findAll(pageable);
         return result.map(AnomalyResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public AuditSummaryResponse summary() {
+        Instant monthStart = LocalDate.now(ZoneOffset.UTC).withDayOfMonth(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        return new AuditSummaryResponse(
+                anomalies.countByResolutionStatus(AnomalyResolutionStatus.OPEN),
+                anomalies.countBySeverityAndResolutionStatus(AnomalySeverity.RED, AnomalyResolutionStatus.OPEN),
+                anomalies.countBySeverityAndResolutionStatus(AnomalySeverity.YELLOW, AnomalyResolutionStatus.OPEN),
+                anomalies.countByResolutionStatusInAndResolvedAtGreaterThanEqual(
+                        List.of(AnomalyResolutionStatus.RESOLVED, AnomalyResolutionStatus.ARCHIVED), monthStart));
+    }
+
+    /** Correcciones automáticas permitidas: Patient.email, Patient.phone y Policy.premiumAmount. */
+    static boolean isAutoCorrectable(DataAnomalyEntity anomaly) {
+        String field = anomaly.getSuggestedCorrectionField();
+        String value = anomaly.getSuggestedCorrectionValue();
+        if (field == null || field.isBlank() || value == null || value.isBlank()) return false;
+        return switch (anomaly.getAffectedRecordType()) {
+            case PATIENT -> field.equals("email") || field.equals("phone");
+            case POLICY -> field.equals("premiumAmount");
+            case CLAIM -> false;
+        };
     }
 
     @Transactional
