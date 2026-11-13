@@ -33,7 +33,6 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 
 @Configuration
@@ -58,19 +57,6 @@ public class SecurityConfiguration {
             throw new IllegalStateException("JWT_SECRET must contain at least 32 bytes");
         }
         return new SecretKeySpec(configuredSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-    }
-
-    @Bean
-    org.springframework.boot.ApplicationRunner validateEncryptionKey(@Value("${app.encryption.key}") String configuredKey) {
-        return args -> {
-            try {
-                if (Base64.getDecoder().decode(configuredKey).length != 32) {
-                    throw new IllegalStateException("ENCRYPTION_KEY must decode to exactly 32 bytes");
-                }
-            } catch (IllegalArgumentException exception) {
-                throw new IllegalStateException("ENCRYPTION_KEY must be valid Base64", exception);
-            }
-        };
     }
 
     @Bean
