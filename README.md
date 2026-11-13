@@ -36,6 +36,14 @@ Usuarios demo (contraseña `NexoDemo2026!`):
 3. `SPRING_PROFILES_ACTIVE=prod ./mvnw spring-boot:run`. Flyway aplica `V1` y `V2` al arrancar.
 4. El primer administrador se crea con `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD` (mínimo 16 caracteres) solo si no existe ningún usuario. Elimina esas variables después.
 
+## Supabase
+
+1. Copia `.env.example` a `.env` y completa `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `ENCRYPTION_KEY` y `JWT_SECRET` (el `.env` ya activa `spring.profiles.active=supabase`).
+2. Usa la cadena del **Session pooler** (IPv4, puerto 5432) con `?sslmode=require`; el usuario es `postgres.<project-ref>`.
+3. `.\mvnw.cmd spring-boot:run`: Flyway crea el esquema `erp` y aplica V1/V2. Con `DEMO_SEED=true` se cargan los datos demo la primera vez.
+
+Las tablas viven en el esquema `erp`, no en `public`, para que la Data API de Supabase no las exponga. Guarda `ENCRYPTION_KEY` en un lugar seguro: sin ella los datos cifrados no se pueden leer.
+
 ## Docker
 
 ```powershell
