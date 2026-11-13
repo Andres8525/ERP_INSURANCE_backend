@@ -14,6 +14,9 @@ import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -63,7 +66,16 @@ public class AuthController {
         }
     }
 
+    /** Datos de la sesión actual a partir del JWT (útil para validar un token guardado en el cliente). */
+    @GetMapping("/me")
+    public SessionResponse me(JwtAuthenticationToken authentication) {
+        Jwt jwt = authentication.getToken();
+        return new SessionResponse(jwt.getClaimAsString("email"), UserRole.valueOf(jwt.getClaimAsString("role")),
+                jwt.getExpiresAt());
+    }
+
     public record LoginRequest(@Email @NotBlank @Size(max = 320) String email,
                                @NotBlank @Size(min = 12, max = 128) String password) {}
+    public record SessionResponse(String email, UserRole role, Instant expiresAt) {}
     public record TokenResponse(String accessToken, String tokenType, Instant expiresAt, String email, UserRole role) {}
 }
