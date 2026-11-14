@@ -1,5 +1,9 @@
 package com.erp.insurance.security;
 
+import com.erp.insurance.common.IdempotencyFilter;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
+import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +36,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
@@ -80,9 +86,14 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/docs", "/api/docs/**", "/api/openapi/**", "/actuator/health").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/catalogs", "/api/catalogs/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter)))
+                .headers(headers -> headers.crossOriginResourcePolicy(policy -> policy
+                        .policy(CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy.CROSS_ORIGIN)))
+                .addFilterAfter(new IdempotencyFilter(Duration.ofHours(24), 10_000, Clock.systemUTC()),
+                        BearerTokenAuthenticationFilter.class)
                 .build();
     }
 
@@ -102,7 +113,10 @@ public class SecurityConfiguration {
 
         configuration.setAllowedOriginPatterns(Arrays.stream(origins.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", IdempotencyFilter.HEADER,
+                "If-None-Match"));
+        configuration.setExposedHeaders(List.of(HttpHeaders.ETAG, HttpHeaders.CONTENT_DISPOSITION,
+                IdempotencyFilter.REPLAYED_HEADER));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
