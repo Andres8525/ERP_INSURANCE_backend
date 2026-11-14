@@ -51,5 +51,9 @@ public final class AuditDtos {
 
     public record ResolveBatchResponse(int processed, BatchResolutionAction action, List<UUID> ids) {}
 
+    public record ScanResponse(int analyzedRecords, int findings, int created, int alreadyKnown, String engineMode,
+                               String engineVersion, List<String> appliedRules, String correlationId,
+                               long durationMs) {}
+
     public record AuditSummaryResponse(long open, long critical, long review, long resolvedThisMonth) {}
 }

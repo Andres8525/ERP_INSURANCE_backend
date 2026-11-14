@@ -25,8 +25,18 @@ import static com.erp.insurance.audit.AuditDtos.*;
 @Validated
 public class AuditController {
     private final AuditService audit;
+    private final AnomalyScanService scanner;
 
-    public AuditController(AuditService audit) { this.audit = audit; }
+    public AuditController(AuditService audit, AnomalyScanService scanner) {
+        this.audit = audit;
+        this.scanner = scanner;
+    }
+
+    @Operation(summary = "Ejecutar análisis IA", description = "Envía pacientes y pólizas al microservicio anomaly-engine por gRPC y registra los hallazgos nuevos.")
+    @PostMapping("/scan")
+    public ScanResponse scan() {
+        return scanner.scan();
+    }
 
     @Operation(summary = "Listar anomalías", description = "Hallazgos del motor de IA (simulado), paginados y filtrables por severidad, estado y tipo.")
     @GetMapping("/anomalies")
