@@ -52,4 +52,9 @@ public final class AuditDtos {
                                long durationMs) {}
 
     public record AuditSummaryResponse(long open, long critical, long review, long resolvedThisMonth) {}
+
+    public record AiStatusResponse(boolean enabled, String provider, String model) {}
+
+    public record AiInsightResponse(String content, String provider, String model, int analyzedAnomalies,
+                                    int promptTokens, int completionTokens, long latencyMs, Instant generatedAt) {}
 }

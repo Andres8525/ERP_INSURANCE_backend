@@ -26,10 +26,12 @@ import static com.erp.insurance.audit.AuditDtos.*;
 public class AuditController {
     private final AuditService audit;
     private final AnomalyScanService scanner;
+    private final AiInsightService ai;
 
-    public AuditController(AuditService audit, AnomalyScanService scanner) {
+    public AuditController(AuditService audit, AnomalyScanService scanner, AiInsightService ai) {
         this.audit = audit;
         this.scanner = scanner;
+        this.ai = ai;
     }
 
     @Operation(summary = "Ejecutar análisis IA", description = "Envía pacientes y pólizas al microservicio anomaly-engine por gRPC y registra los hallazgos nuevos.")
@@ -52,6 +54,24 @@ public class AuditController {
     @GetMapping("/summary")
     public AuditSummaryResponse summary() {
         return audit.summary();
+    }
+
+    @Operation(summary = "Estado del asistente IA", description = "Indica si Grok está configurado (GROK_API_KEY) y qué modelo se usa.")
+    @GetMapping("/ai/status")
+    public AiStatusResponse aiStatus() {
+        return ai.status();
+    }
+
+    @Operation(summary = "Recomendaciones IA de la bandeja", description = "Envía a Grok un resumen anonimizado de las anomalías abiertas y devuelve diagnóstico, prioridades y acciones.")
+    @PostMapping("/ai/insights")
+    public AiInsightResponse aiInsights() {
+        return ai.insights();
+    }
+
+    @Operation(summary = "Explicar una anomalía con IA", description = "Explicación y pasos de corrección generados por Grok sin enviar datos personales.")
+    @PostMapping("/anomalies/{id}/ai-explanation")
+    public AiInsightResponse aiExplanation(@PathVariable UUID id) {
+        return ai.explain(id);
     }
 
     @Operation(summary = "Resolver anomalías en lote", description = "ARCHIVAR_DEFINITIVO o AUTOCORREGIR hasta 100 anomalías abiertas en una sola transacción; si una falla, se revierte todo el lote.")
