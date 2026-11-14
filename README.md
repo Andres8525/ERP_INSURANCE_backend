@@ -137,6 +137,23 @@ El perfil `supabase` limita cuánto puede esperar la conexión al pooler: `conne
 - **Idempotency-Key**: las escrituras (`POST/PUT/PATCH/DELETE` bajo `/api`) que traen esta cabecera se ejecutan una sola vez; si la cola offline del Service Worker reenvía la misma petición, la API devuelve la respuesta original con `Idempotent-Replayed: true`.
 - **Aislamiento entre orígenes**: la API responde con `Cross-Origin-Resource-Policy: cross-origin` y expone `ETag`, `Content-Disposition` e `Idempotent-Replayed` por CORS, compatible con un frontend que usa `Cross-Origin-Embedder-Policy: require-corp`.
 
+## Análisis con IA (Grok de xAI)
+
+El módulo de auditoría puede pedir a Grok un diagnóstico de la bandeja de anomalías. La integración sigue el mismo patrón puerto/adaptador que el motor gRPC: `AiAssistant` es el puerto, `GrokAiAssistant` el adaptador HTTP (`POST {GROK_BASE_URL}/chat/completions`, API compatible con OpenAI) y `DisabledAiAssistant` el respaldo cuando no hay clave.
+
+| Variable | Por defecto | Uso |
+| --- | --- | --- |
+| `GROK_API_KEY` | (vacía) | Clave de console.x.ai. Sin ella los endpoints de IA responden 503 y el resto de la API funciona igual |
+| `GROK_MODEL` | `grok-4.7` | Modelo de xAI |
+| `GROK_BASE_URL` | `https://api.x.ai/v1` | URL base de la API |
+| `GROK_READ_TIMEOUT` | `60s` | Tiempo máximo de respuesta |
+| `GROK_MAX_TOKENS` | `900` | Límite de tokens de salida (controla el costo) |
+| `GROK_MAX_ANOMALIES` | `200` | Anomalías abiertas que entran en el resumen |
+
+**Privacidad:** a Grok solo se envían metadatos anonimizados (tipo, severidad, título genérico de la regla, campo afectado, origen y confianza). Nunca nombres, correos, teléfonos, fechas de nacimiento, CRMID ni valores de los campos.
+
+Errores: sin clave → 503; clave inválida o sin créditos → 502; límite de uso → 429; sin respuesta a tiempo → 504.
+
 ## Seguridad
 
 - JWT HS256 (`POST /api/auth/login`); todos los endpoints excepto login, OpenAPI y health exigen `Authorization: Bearer <token>`.
@@ -178,6 +195,9 @@ Esto es una base técnica, no una certificación HIPAA: producción requiere TLS
 | GET | `/api/catalogs/medications?q=&controlled=` | Catálogo de medicamentos (público, cacheable) |
 | GET | `/api/analytics/billing-records.csv?count=&seed=` | Registros de facturación sintéticos tipo RIPS (CSV por streaming, máx. 200.000) |
 | POST | `/api/audit/scan` | Ejecuta el motor gRPC → `{analyzedRecords, findings, created, alreadyKnown, engineMode, engineVersion, appliedRules, correlationId, durationMs}` |
+| GET | `/api/audit/ai/status` | `{enabled, provider, model}`: si Grok está configurado |
+| POST | `/api/audit/ai/insights` | Diagnóstico IA de las anomalías abiertas → `{content (Markdown), provider, model, analyzedAnomalies, promptTokens, completionTokens, latencyMs, generatedAt}` |
+| POST | `/api/audit/anomalies/{id}/ai-explanation` | Explicación IA de una anomalía y cómo corregirla (mismo formato) |
 | POST | `/api/audit/resolve-batch` | `{ids: [uuid], action: "ARCHIVAR_DEFINITIVO" \| "AUTOCORREGIR"}` → 200 `{processed, action, ids}` |
 
 Notas del contrato:
