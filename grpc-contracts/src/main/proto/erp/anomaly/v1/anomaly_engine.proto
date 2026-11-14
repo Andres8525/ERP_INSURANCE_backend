@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package erp.anomaly.v1;
+
+option java_multiple_files = true;
+option java_package = "com.erp.grpc.anomaly.v1";
+option java_outer_classname = "AnomalyEngineProto";
+
+service AnomalyEngine {
+  rpc Analyze(AnalyzeRequest) returns (AnalyzeResponse);
+  rpc AnalyzeStream(AnalyzeRequest) returns (stream Finding);
+}
+
+message AnalyzeRequest {
+  repeated PatientSnapshot patients = 1;
+  repeated PolicySnapshot policies = 2;
+  string reference_date = 3;
+}
+
+message AnalyzeResponse {
+  repeated Finding findings = 1;
+  int32 analyzed_records = 2;
+  string engine_version = 3;
+  repeated string applied_rules = 4;
+}
+
+message PatientSnapshot {
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4;
+  string phone = 5;
+  string date_of_birth = 6;
+}
+
+message PolicySnapshot {
+  string id = 1;
+  string patient_id = 2;
+  string insurer = 3;
+  string plan_name = 4;
+  string coverage_start = 5;
+  string coverage_end = 6;
+  string premium_amount = 7;
+  PolicyStatus status = 8;
+}
+
+enum PolicyStatus {
+  POLICY_STATUS_UNSPECIFIED = 0;
+  POLICY_STATUS_PENDING = 1;
+  POLICY_STATUS_ACTIVE = 2;
+  POLICY_STATUS_TERMINATED = 3;
+}
+
+enum FindingType {
+  FINDING_TYPE_UNSPECIFIED = 0;
+  FINDING_TYPE_POLICY_OVERLAP = 1;
+  FINDING_TYPE_DUPLICATE = 2;
+  FINDING_TYPE_OBSOLETE_FILE = 3;
+  FINDING_TYPE_OTHER = 4;
+}
+
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_RED = 1;
+  SEVERITY_YELLOW = 2;
+}
+
+enum RecordType {
+  RECORD_TYPE_UNSPECIFIED = 0;
+  RECORD_TYPE_PATIENT = 1;
+  RECORD_TYPE_POLICY = 2;
+}
+
+message Finding {
+  string rule = 1;
+  FindingType type = 2;
+  Severity severity = 3;
+  RecordType record_type = 4;
+  string record_id = 5;
+  string patient_id = 6;
+  string title = 7;
+  string description = 8;
+  string source = 9;
+  int32 confidence = 10;
+  string field_label = 11;
+  string current_value = 12;
+  string conflicting_value = 13;
+  string evidence = 14;
+  string suggested_field = 15;
+  string suggested_value = 16;
+}
