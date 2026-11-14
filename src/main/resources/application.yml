@@ -32,6 +32,9 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+        # Carga perezosa en lotes: el pipeline y la bandeja de anomalías dejan de hacer una consulta
+        # por fila (N+1) para pacientes, servicios e historial; importante con la latencia de Supabase.
+        default_batch_fetch_size: 50
   flyway:
     enabled: true
   jackson:
