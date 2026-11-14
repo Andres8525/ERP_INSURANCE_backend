@@ -83,6 +83,16 @@ public class DemoDataSeeder implements ApplicationRunner {
         PatientEntity elena = patient("Elena", "Morales", "elena.morales@example.test", "(305) 555-0133", "1989-12-05", "44750.00", AcaEligibilityStatus.ELIGIBLE, AccountStatus.ACTIVE);
         PatientEntity patricia = patient("Patricia", "López", "patricia.lopez@example.test", "(407) 555-0181", "1961-06-11", "33100.00", AcaEligibilityStatus.INELIGIBLE, AccountStatus.INACTIVE);
 
+        maria.setCity("Miami");
+        james.setCity("Orlando");
+        lucia.setCity("Tampa");
+        luciaDup.setCity("Tampa");
+        robert.setCity("Tampa");
+        ana.setCity("Miami");
+        david.setCity("Tampa");
+        elena.setCity("Miami");
+        patricia.setCity("Orlando");
+
         int year = LocalDate.now().getYear();
         LocalDate jan1 = LocalDate.of(year, 1, 1);
         LocalDate dec31 = LocalDate.of(year, 12, 31);
@@ -91,7 +101,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         PolicyEntity jamesPolicy = policy(james, "OSC-5521-00871", "Oscar Health", "Classic Bronze EPO", jan1, dec31, "482.16", PolicyStatus.ACTIVE, true);
         policy(lucia, "BCB-7712-30045", "Florida Blue", "BlueSelect Silver", jan1, dec31, "389.40", PolicyStatus.ACTIVE, false);
         policy(robert, "MOL-3301-44120", "Molina Healthcare", "Silver 150", LocalDate.of(year, 3, 1), dec31, "312.75", PolicyStatus.PENDING, false);
-        policy(ana, "OSC-5521-01934", "Oscar Health", "Simple Silver EPO", jan1, dec31, "355.00", PolicyStatus.ACTIVE, false);
+        policy(ana, "OSC-5521-01934", "Oscar Health", "Simple Silver EPO", jan1, dec31, "0.00", PolicyStatus.ACTIVE, false);
         policy(david, "AET-9910-22871", "Aetna CVS Health", "Gold Plus HMO", jan1, dec31, "512.90", PolicyStatus.ACTIVE, false);
         policy(elena, "AMB-2847-15560", "Ambetter", "Balanced Care 12", jan1, dec31, "401.30", PolicyStatus.ACTIVE, false);
         policy(patricia, "CIG-4420-77810", "Cigna", "Connect Bronze", LocalDate.of(year - 1, 1, 1), LocalDate.of(year - 1, 12, 31), "298.00", PolicyStatus.TERMINATED, false);
