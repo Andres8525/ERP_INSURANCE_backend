@@ -52,6 +52,8 @@ app:
   security:
     jwt-secret: ${JWT_SECRET:}
     jwt-ttl-minutes: ${JWT_TTL_MINUTES:15}
+    # Coste de BCrypt (4-31). Cada +1 duplica el tiempo de login.
+    bcrypt-strength: ${BCRYPT_STRENGTH:10}
     # Autoregistro de usuarios (rol AGENT) desde la pantalla de login.
     allow-registration: ${ALLOW_REGISTRATION:true}
   encryption:

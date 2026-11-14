@@ -40,8 +40,9 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfiguration {
     @Bean
-    PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
+    PasswordEncoder passwordEncoder(@Value("${app.security.bcrypt-strength:10}") int strength) {
+        // 10 es el mínimo recomendado por OWASP; 12 tarda ~4x más y en Render free (0.1 CPU) supera los 2 s por login.
+        return new BCryptPasswordEncoder(strength);
     }
 
     @Bean
