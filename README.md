@@ -119,6 +119,13 @@ docker build -f anomaly-engine/Dockerfile -t erp-anomaly-engine .               
 
 `docker-compose.yml` crea el administrador `admin@nexo.local` / `LocalAdminPassword2026!` y usa secretos de desarrollo: no lo uses tal cual en producción.
 
+## Clientes CRM y prima cero
+
+- Cada paciente tiene un **CRM ID** legible (`CRM-7K2M9QXA`), generado al darlo de alta; la migración `V3` asigna uno a los registros existentes y añade la **ciudad** (cifrada).
+- `GET /api/clients` resume cada cliente con su plan médico vigente (activo en vigor, o el más reciente) y una descripción breve, por ejemplo: *Simple Silver EPO de Oscar Health, prima $0 por subsidio ACA · Miami · Elegible ACA*.
+- `GET /api/clients/{id}/pdf` genera con OpenPDF una ficha con datos del cliente, plan vigente e historial de pólizas.
+- **Prima $0:** las pólizas aceptan `premiumAmount: 0` (planes con crédito fiscal ACA completo) y el motor de anomalías ya no la marca como error; solo señala primas ausentes, negativas o superiores a 2.500 USD.
+
 ## Seguridad
 
 - JWT HS256 (`POST /api/auth/login`); todos los endpoints excepto login, OpenAPI y health exigen `Authorization: Bearer <token>`.
@@ -152,6 +159,9 @@ Esto es una base técnica, no una certificación HIPAA: producción requiere TLS
 | DELETE | `/api/claims/{id}` | 204 |
 | GET | `/api/audit/anomalies?page=0&size=25&severity=&resolutionStatus=&type=` | Anomalías paginadas (≥5 en demo) |
 | GET | `/api/audit/summary` | `{open, critical, review, resolvedThisMonth}` |
+| GET | `/api/clients?q=` | Clientes CRM: `crmId`, nombre, contacto, ciudad, edad, plan vigente (`zeroPremium`) y `description` |
+| GET | `/api/clients/{id}` | Resumen CRM de un cliente |
+| GET | `/api/clients/{id}/pdf` | Ficha del cliente en PDF (adjunto, sin caché) |
 | POST | `/api/audit/scan` | Ejecuta el motor gRPC → `{analyzedRecords, findings, created, alreadyKnown, engineMode, engineVersion, appliedRules, correlationId, durationMs}` |
 | POST | `/api/audit/resolve-batch` | `{ids: [uuid], action: "ARCHIVAR_DEFINITIVO" \| "AUTOCORREGIR"}` → 200 `{processed, action, ids}` |
 
@@ -173,6 +183,7 @@ Los tipos TypeScript equivalentes están en `fronted/src/app/core/api/api.models
 
 - `DetectionRulesTest`, `AnomalyEngineGrpcServiceTest`: reglas del motor, orden de prioridad, streaming, `INVALID_ARGUMENT` y eco de la cabecera de correlación.
 - `GrpcAnomalyDetectorTest`: llamada remota real por red, fallback en proceso y fallo explícito sin fallback.
+- `ClientsApiTest`, `ClientServiceTest`: listado CRM, búsqueda, plan vigente, prima cero y PDF.
 - `AnomalyScanTest`: análisis desde la API, deduplicación, corrección automática y validación de correos sin dominio.
 
 - `ApiIntegrationTest`: levanta el perfil demo y recorre el contrato que usa el frontend (CORS desde `localhost:4200`, login JWT, anomalías + resolución masiva, CRUD de pacientes, pólizas y siniestros, 401 sin token).
