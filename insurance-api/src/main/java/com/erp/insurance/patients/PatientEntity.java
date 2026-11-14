@@ -44,6 +44,11 @@ public class PatientEntity {
     @Convert(converter = SensitiveDataConverter.class)
     @Column(columnDefinition = "text")
     private String phone;
+    @Column(name = "crm_id", nullable = false, unique = true, length = 16, updatable = false)
+    private String crmId = CrmIds.next();
+    @Convert(converter = SensitiveDataConverter.class)
+    @Column(columnDefinition = "text")
+    private String city;
     @Convert(converter = SensitiveDataConverter.class)
     @Column(name = "date_of_birth", nullable = false, columnDefinition = "text")
     private String dateOfBirth;
@@ -73,6 +78,9 @@ public class PatientEntity {
     public void setEmail(String value) { email = value; }
     public String getEmailLookupHash() { return emailLookupHash; }
     public void setEmailLookupHash(String value) { emailLookupHash = value; }
+    public String getCrmId() { return crmId; }
+    public String getCity() { return city; }
+    public void setCity(String value) { city = value; }
     public String getPhone() { return phone; }
     public void setPhone(String value) { phone = value; }
     public String getDateOfBirth() { return dateOfBirth; }
