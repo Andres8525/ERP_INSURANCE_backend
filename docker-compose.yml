@@ -1,6 +1,3 @@
-# Entorno local con PostgreSQL y perfil prod (Flyway + validación de esquema).
-#   docker compose up --build
-# Los secretos de abajo son SOLO para desarrollo local; en un despliegue real usa variables seguras.
 services:
   db:
     image: postgres:16-alpine
@@ -17,11 +14,22 @@ services:
       interval: 5s
       retries: 10
 
+  anomaly-engine:
+    build:
+      context: .
+      dockerfile: anomaly-engine/Dockerfile
+    environment:
+      GRPC_PORT: "9090"
+    ports:
+      - "9090:9090"
+
   api:
     build: .
     depends_on:
       db:
         condition: service_healthy
+      anomaly-engine:
+        condition: service_started
     environment:
       SPRING_PROFILES_ACTIVE: prod
       DB_URL: jdbc:postgresql://db:5432/erp_insurance
@@ -32,6 +40,7 @@ services:
       FRONTEND_ORIGINS: http://localhost:4200
       BOOTSTRAP_ADMIN_EMAIL: admin@nexo.local
       BOOTSTRAP_ADMIN_PASSWORD: LocalAdminPassword2026!
+      ANOMALY_ENGINE_ADDRESS: anomaly-engine:9090
     ports:
       - "8080:8080"
 
