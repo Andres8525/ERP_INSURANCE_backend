@@ -4,7 +4,7 @@ server:
   forward-headers-strategy: framework
   compression:
     enabled: true
-    mime-types: application/json,application/problem+json,text/plain
+    mime-types: application/json,application/problem+json,text/plain,text/csv
     min-response-size: 1024
 
 spring:
