@@ -9,13 +9,18 @@ import java.time.Instant;
 import java.util.UUID;
 
 public final class PatientDtos {
+    public static final String EMAIL_PATTERN = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
+    public static final String PHONE_PATTERN = "^[0-9()+\\-.\\s]{7,32}$";
+    private static final String EMAIL_MESSAGE = "must be a valid email address with a domain such as name@mail.com";
+    private static final String PHONE_MESSAGE = "must contain only digits, spaces, parentheses, dots or dashes";
+
     private PatientDtos() {}
 
     public record CreatePatientRequest(
             @NotBlank @Size(max = 100) String firstName,
             @NotBlank @Size(max = 100) String lastName,
-            @NotBlank @Email @Size(max = 320) String email,
-            @Size(max = 32) String phone,
+            @NotBlank @Pattern(regexp = EMAIL_PATTERN, message = EMAIL_MESSAGE) @Size(max = 320) String email,
+            @Pattern(regexp = PHONE_PATTERN, message = PHONE_MESSAGE) @Size(max = 32) String phone,
             @NotBlank @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$") String dateOfBirth,
             @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal householdIncome,
             AcaEligibilityStatus acaEligibilityStatus,
@@ -24,8 +29,8 @@ public final class PatientDtos {
     public record UpdatePatientRequest(
             @Size(max = 100) String firstName,
             @Size(max = 100) String lastName,
-            @Email @Size(max = 320) String email,
-            @Size(max = 32) String phone,
+            @Pattern(regexp = EMAIL_PATTERN, message = EMAIL_MESSAGE) @Size(max = 320) String email,
+            @Pattern(regexp = PHONE_PATTERN, message = PHONE_MESSAGE) @Size(max = 32) String phone,
             @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$") String dateOfBirth,
             @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal householdIncome,
             AcaEligibilityStatus acaEligibilityStatus,
