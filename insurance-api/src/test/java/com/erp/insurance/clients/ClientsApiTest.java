@@ -136,6 +136,18 @@ class ClientsApiTest {
     }
 
     @Test
+    void previewServesThePdfInlineAndRejectsUnknownDispositions() throws Exception {
+        String id = read(get("/api/clients")).get(0).get("id").asText();
+        MockHttpServletResponse inline = mvc.perform(auth(get("/api/clients/" + id + "/pdf").param("disposition", "inline")))
+                .andExpect(status().isOk())
+                .andReturn().getResponse();
+        assertThat(inline.getHeader(HttpHeaders.CONTENT_DISPOSITION)).startsWith("inline");
+
+        mvc.perform(auth(get("/api/clients/" + id + "/pdf").param("disposition", "script")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void unknownClientsAreNotFoundAndAnonymousCallsAreRejected() throws Exception {
         mvc.perform(auth(get("/api/clients/" + UUID.randomUUID() + "/pdf"))).andExpect(status().isNotFound());
         mvc.perform(get("/api/clients")).andExpect(status().isUnauthorized());
