@@ -1,6 +1,40 @@
 # ERP Insurance API
 
-API REST con Spring Boot 3.5, Java 21 y Maven para un ERP de corredora de seguros médicos ACA.
+API REST con Spring Boot 3.5, Java 21 y Maven para un ERP de corredora de seguros médicos ACA, con un microservicio gRPC de detección de anomalías.
+
+## Arquitectura
+
+```text
+backend/
+├── pom.xml              pom padre: módulos, versiones de gRPC y protobuf
+├── grpc-contracts/      contratos .proto versionados (erp.anomaly.v1) y stubs generados
+├── anomaly-engine/      microservicio gRPC sin Spring: reglas de detección + servidor
+└── insurance-api/       API REST Spring Boot (JWT, JPA, Flyway) y cliente gRPC
+```
+
+```text
+Angular ──HTTP/JSON──▶ insurance-api ──gRPC (protobuf)──▶ anomaly-engine
+                           │  POST /api/audit/scan            Analyze / AnalyzeStream
+                           └─ si no hay microservicio: el mismo motor en proceso (InProcessServer)
+```
+
+Patrones aplicados:
+
+| Patrón | Dónde |
+| --- | --- |
+| Contract-first con versionado de paquete | `grpc-contracts/src/main/proto/erp/anomaly/v1/anomaly_engine.proto` |
+| RPC unario y server-streaming | `Analyze` (la API) y `AnalyzeStream` (clientes que procesan hallazgos uno a uno) |
+| Interceptores de cliente y servidor | `CorrelationIdClientInterceptor` (vía `CallOptions`) y `CorrelationIdServerInterceptor` propagan `x-correlation-id` y registran duración |
+| Deadlines y reintentos | deadline por llamada (`ANOMALY_ENGINE_DEADLINE`) y política de reintentos ante `UNAVAILABLE` en la service config del canal |
+| Fallback | si el microservicio no responde (`UNAVAILABLE`, `DEADLINE_EXCEEDED`), la API usa el motor en proceso |
+| Health checking y reflexión | `grpc.health.v1.Health` y `ProtoReflectionServiceV1` en el microservicio (compatible con `grpcurl`) |
+| Puertos y adaptadores | `AnomalyDetector` (puerto) y `GrpcAnomalyDetector` (adaptador) |
+| Capa anticorrupción | `SnapshotMapper` (JPA → protobuf) y `ProtoMapper` (protobuf → dominio del motor) |
+| Strategy y Builder | cada `DetectionRule` es una estrategia; `Finding.builder()` construye hallazgos |
+
+Reglas del motor: correo inválido o con dominio mal escrito (`piedad@gmailcom` → `piedad@gmail.com`), teléfono fuera de formato, fecha de nacimiento imposible, pacientes duplicados, pólizas solapadas, pólizas vencidas marcadas como activas y prima fuera de rango. Las correcciones de correo y teléfono se pueden aplicar con `AUTOCORREGIR`.
+
+En Render solo se despliega `insurance-api` (el plan free no admite servicios privados) y el motor corre en proceso; con `docker compose` corre como microservicio independiente.
 
 ## Perfiles
 
@@ -9,14 +43,22 @@ API REST con Spring Boot 3.5, Java 21 y Maven para un ERP de corredora de seguro
 | `demo` (por defecto) | H2 en memoria | Hibernate `create-drop` | `DemoDataSeeder` carga usuarios, pacientes, pólizas, siniestros y anomalías | Desarrollo y presentación. No necesita variables de entorno. |
 | `prod` | PostgreSQL | Flyway (`db/migration`) + `ddl-auto: validate` | Ninguno | Despliegue real. Requiere las variables de [.env.example](.env.example). |
 
-Los secretos del perfil demo están en [application-demo.yml](src/main/resources/application-demo.yml) y son públicos: no lo uses con datos reales.
+Los secretos del perfil demo están en [application-demo.yml](insurance-api/src/main/resources/application-demo.yml) y son públicos: no lo uses con datos reales.
 
 ## Inicio rápido (demo)
 
 ```powershell
 cd backend
-.\mvnw.cmd spring-boot:run      # Windows
-./mvnw spring-boot:run          # Linux/macOS
+.\mvnw.cmd install -DskipTests                  # compila contratos, motor y API
+.\mvnw.cmd -pl insurance-api spring-boot:run    # Windows
+./mvnw -pl insurance-api spring-boot:run         # Linux/macOS
+```
+
+Microservicio gRPC por separado (opcional):
+
+```powershell
+java -jar anomaly-engine/target/anomaly-engine-1.0.0-exec.jar      # escucha en GRPC_PORT (9090)
+$env:ANOMALY_ENGINE_ADDRESS="localhost:9090"; .\mvnw.cmd -pl insurance-api spring-boot:run
 ```
 
 Requiere JDK 21 (`JAVA_HOME`). El wrapper descarga Maven 3.9.12 si no está instalado. La API escucha en `http://localhost:8080` (cámbialo con `SERVER_PORT`) y Swagger UI queda en `http://localhost:8080/api/docs`.
@@ -33,14 +75,14 @@ Usuarios demo (contraseña `NexoDemo2026!`):
 
 1. Crea la base y exporta las variables de [.env.example](.env.example) (Spring no lee archivos `.env`).
 2. `ENCRYPTION_KEY`: 32 bytes aleatorios en Base64 (`openssl rand -base64 32`). `JWT_SECRET`: al menos 32 bytes.
-3. `SPRING_PROFILES_ACTIVE=prod ./mvnw spring-boot:run`. Flyway aplica `V1` y `V2` al arrancar.
+3. `SPRING_PROFILES_ACTIVE=prod ./mvnw -pl insurance-api spring-boot:run`. Flyway aplica `V1` y `V2` al arrancar.
 4. El primer administrador se crea con `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD` (mínimo 16 caracteres) solo si no existe ningún usuario. Elimina esas variables después.
 
 ## Supabase
 
 1. Copia `.env.example` a `.env` y completa `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `ENCRYPTION_KEY` y `JWT_SECRET` (el `.env` ya activa `spring.profiles.active=supabase`).
 2. Usa la cadena del **Session pooler** (IPv4, puerto 5432) con `?sslmode=require`; el usuario es `postgres.<project-ref>`.
-3. `.\mvnw.cmd spring-boot:run`: Flyway crea el esquema `erp` y aplica V1/V2. Con `DEMO_SEED=true` se cargan los datos demo la primera vez.
+3. `.\mvnw.cmd -pl insurance-api spring-boot:run`: Flyway crea el esquema `erp` y aplica V1/V2. Con `DEMO_SEED=true` se cargan los datos demo la primera vez.
 
 Las tablas viven en el esquema `erp`, no en `public`, para que la Data API de Supabase no las exponga. Guarda `ENCRYPTION_KEY` en un lugar seguro: sin ella los datos cifrados no se pueden leer.
 
@@ -70,8 +112,9 @@ Notas:
 ## Docker
 
 ```powershell
-docker compose up --build     # PostgreSQL 16 + API en perfil prod (Flyway V1/V2)
-docker build -t erp-insurance-api . && docker run -p 8080:8080 erp-insurance-api   # perfil demo
+docker compose up --build     # PostgreSQL 16 + anomaly-engine (gRPC :9090) + API en perfil prod
+docker build -t erp-insurance-api . && docker run -p 8080:8080 erp-insurance-api   # API sola, perfil demo
+docker build -f anomaly-engine/Dockerfile -t erp-anomaly-engine .                   # microservicio gRPC
 ```
 
 `docker-compose.yml` crea el administrador `admin@nexo.local` / `LocalAdminPassword2026!` y usa secretos de desarrollo: no lo uses tal cual en producción.
@@ -109,6 +152,7 @@ Esto es una base técnica, no una certificación HIPAA: producción requiere TLS
 | DELETE | `/api/claims/{id}` | 204 |
 | GET | `/api/audit/anomalies?page=0&size=25&severity=&resolutionStatus=&type=` | Anomalías paginadas (≥5 en demo) |
 | GET | `/api/audit/summary` | `{open, critical, review, resolvedThisMonth}` |
+| POST | `/api/audit/scan` | Ejecuta el motor gRPC → `{analyzedRecords, findings, created, alreadyKnown, engineMode, engineVersion, appliedRules, correlationId, durationMs}` |
 | POST | `/api/audit/resolve-batch` | `{ids: [uuid], action: "ARCHIVAR_DEFINITIVO" \| "AUTOCORREGIR"}` → 200 `{processed, action, ids}` |
 
 Notas del contrato:
@@ -119,13 +163,17 @@ Notas del contrato:
 - Los errores siguen RFC 7807 (`ProblemDetail`: `status`, `title`, `detail`). Las validaciones añaden `errors` (campo → mensaje); JSON mal formado, enums inválidos y campos desconocidos devuelven 400 con un `detail` explicativo; conflictos de integridad, 409.
 - Swagger UI (`/api/docs`) agrupa los endpoints por módulo y permite autenticarse con el botón *Authorize* (Bearer JWT).
 
-Los tipos TypeScript equivalentes están en `fronted/Erp_Insurance/src/app/core/api/api.models.ts`; si cambias un DTO, cambia ambos.
+Los tipos TypeScript equivalentes están en `fronted/src/app/core/api/api.models.ts`; si cambias un DTO, cambia ambos.
 
 ## Pruebas
 
 ```powershell
-.\mvnw.cmd test
+.\mvnw.cmd verify
 ```
+
+- `DetectionRulesTest`, `AnomalyEngineGrpcServiceTest`: reglas del motor, orden de prioridad, streaming, `INVALID_ARGUMENT` y eco de la cabecera de correlación.
+- `GrpcAnomalyDetectorTest`: llamada remota real por red, fallback en proceso y fallo explícito sin fallback.
+- `AnomalyScanTest`: análisis desde la API, deduplicación, corrección automática y validación de correos sin dominio.
 
 - `ApiIntegrationTest`: levanta el perfil demo y recorre el contrato que usa el frontend (CORS desde `localhost:4200`, login JWT, anomalías + resolución masiva, CRUD de pacientes, pólizas y siniestros, 401 sin token).
 - `SecurityRulesTest`: roles (AGENT sin auditoría), token alterado, credenciales inválidas y `/api/auth/me`.
@@ -133,4 +181,4 @@ Los tipos TypeScript equivalentes están en `fronted/Erp_Insurance/src/app/core/
 - `PolicyApiTest`, `ClaimQueryTest`: solapes de cobertura, actualización/borrado de pólizas y filtros de siniestros.
 - `ClaimEntityTest`, `AutoCorrectionRuleTest`, `SensitiveDataConverterTest`: pruebas unitarias sin Spring.
 
-GitHub Actions (`.github/workflows/ci.yml`) ejecuta `./mvnw verify` en cada push a `main` y en cada pull request.
+GitHub Actions (`.github/workflows/ci.yml`) compila y prueba todos los módulos con `./mvnw verify` en cada push a `main` y en cada pull request.
