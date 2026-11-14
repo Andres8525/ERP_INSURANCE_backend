@@ -11,7 +11,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** La especificación OpenAPI es pública y documenta la seguridad Bearer y los módulos. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("demo")

@@ -71,7 +71,6 @@ public class AuditService {
                         List.of(AnomalyResolutionStatus.RESOLVED, AnomalyResolutionStatus.ARCHIVED), monthStart));
     }
 
-    /** Correcciones automáticas permitidas: Patient.email, Patient.phone y Policy.premiumAmount. */
     static boolean isAutoCorrectable(DataAnomalyEntity anomaly) {
         String field = anomaly.getSuggestedCorrectionField();
         String value = anomaly.getSuggestedCorrectionValue();

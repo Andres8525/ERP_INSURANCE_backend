@@ -23,9 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Verifica, sobre el perfil demo, el mismo contrato HTTP que consume el frontend Angular.
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("demo")

@@ -12,7 +12,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** CORS con patrones, como en un despliegue Render + Vercel. */
 @SpringBootTest(properties = "app.cors.allowed-origins=https://erp-insurance.vercel.app,https://*.vercel.app")
 @AutoConfigureMockMvc
 @ActiveProfiles("demo")

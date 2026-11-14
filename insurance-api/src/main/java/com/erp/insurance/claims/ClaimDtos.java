@@ -14,7 +14,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** Contratos JSON de siniestros (reflejados en api.models.ts del frontend). */
 public final class ClaimDtos {
     private ClaimDtos() {}
 
@@ -30,7 +29,6 @@ public final class ClaimDtos {
                                      @Size(max = 120) String location,
                                      @Size(max = 20) List<@Valid ClaimServiceRequest> services) {}
 
-    /** Actualización parcial: solo se modifican los campos enviados. */
     public record UpdateClaimRequest(@Size(min = 1, max = 2000) String description,
                                      ClaimStatus status,
                                      ClaimPriority priority,

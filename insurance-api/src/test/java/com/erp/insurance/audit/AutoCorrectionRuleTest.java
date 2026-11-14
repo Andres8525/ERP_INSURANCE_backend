@@ -10,9 +10,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Solo Patient.email, Patient.phone y Policy.premiumAmount con valor sugerido admiten AUTOCORREGIR. */
 class AutoCorrectionRuleTest {
-
     @ParameterizedTest(name = "{0}.{1}={2} -> {3}")
     @CsvSource({
             "PATIENT, email,         a@b.test,  true",

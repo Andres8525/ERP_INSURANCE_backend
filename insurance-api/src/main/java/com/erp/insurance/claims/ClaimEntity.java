@@ -55,7 +55,6 @@ public class ClaimEntity {
         this.description = description;
     }
 
-    /** Cambia el estado y deja constancia en el historial. */
     public void changeStatus(ClaimStatus next, String note) {
         ClaimStatus previous = history.isEmpty() ? null : status;
         if (previous == next) return;
@@ -88,7 +87,6 @@ public class ClaimEntity {
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 
-    /** Permite fechar datos semilla en el pasado. */
     public void backdate(Instant created, Instant updated) {
         createdAt = created;
         updatedAt = updated;

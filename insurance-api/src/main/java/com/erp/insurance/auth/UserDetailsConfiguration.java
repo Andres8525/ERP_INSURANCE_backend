@@ -19,7 +19,6 @@ public class UserDetailsConfiguration {
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
     }
 
-    /** Guarda el hash re-cifrado que Spring Security genera tras un login correcto (ver AdaptiveBCryptPasswordEncoder). */
     @Bean
     UserDetailsPasswordService userDetailsPasswordService(UserRepository users) {
         return (user, newEncodedPassword) -> {

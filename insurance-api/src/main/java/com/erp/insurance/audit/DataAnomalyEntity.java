@@ -35,13 +35,13 @@ public class DataAnomalyEntity {
     private UUID affectedRecordId;
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "patient_id")
     private PatientEntity patient;
-    /** Sistema donde el modelo detectó el hallazgo (Marketplace, Facturación, CRM, ACA...). */
+
     @Column(length = 40)
     private String source;
-    /** Confianza del modelo de IA (0-100). */
+
     @Column
     private Integer confidence;
-    /** Etiqueta legible del campo comparado (p. ej. "Prima mensual"). */
+
     @Column(name = "field_label", length = 120)
     private String fieldLabel;
     @Convert(converter = SensitiveDataConverter.class) @Column(name = "current_value", columnDefinition = "text")
@@ -76,7 +76,6 @@ public class DataAnomalyEntity {
         this.patient = patient;
     }
 
-    /** Datos del análisis IA: fuente, confianza y comparación entre registros. */
     public DataAnomalyEntity withAnalysis(String source, int confidence, String fieldLabel, String currentValue,
                                           String conflictingValue, String evidence) {
         this.source = source;

@@ -37,7 +37,7 @@ public class PatientEntity {
     @Convert(converter = SensitiveDataConverter.class)
     @Column(nullable = false, columnDefinition = "text")
     private String email;
-    /** CHAR(64) en la migración V1: se declara el tipo JDBC para que la validación de Hibernate coincida. */
+
     @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "email_lookup_hash", nullable = false, unique = true, length = 64, columnDefinition = "char(64)")
     private String emailLookupHash;

@@ -2,12 +2,6 @@ package com.erp.insurance.security;
 
 import java.util.Base64;
 
-/**
- * Clave AES-256 compartida por {@link SensitiveDataConverter} y {@link EmailLookup}.
- * Los conversores JPA los instancia Hibernate (no Spring), por eso la clave se publica aquí
- * una sola vez al arrancar desde {@code app.encryption.key} (ver {@link EncryptionKeyInitializer}).
- * Si no se configuró, se intenta la variable de entorno ENCRYPTION_KEY.
- */
 public final class EncryptionKeys {
     private static volatile byte[] key;
 

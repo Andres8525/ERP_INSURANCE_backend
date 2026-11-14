@@ -20,7 +20,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Filtros de GET /api/claims sobre los datos demo. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("demo")

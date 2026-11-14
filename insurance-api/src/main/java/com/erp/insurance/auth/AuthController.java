@@ -69,11 +69,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * Autoregistro: crea una cuenta con rol AGENT (sin acceso a auditoría ni administración)
-     * y devuelve el token, de modo que el usuario queda con la sesión iniciada.
-     * Se desactiva con ALLOW_REGISTRATION=false.
-     */
     @Operation(summary = "Crear cuenta", description = "Registra un usuario con rol AGENT y devuelve su JWT.")
     @SecurityRequirements
     @PostMapping("/register")
@@ -106,7 +101,6 @@ public class AuthController {
         return new TokenResponse(token, "Bearer", expiry, user.getEmail(), user.getRole());
     }
 
-    /** Datos de la sesión actual a partir del JWT (útil para validar un token guardado en el cliente). */
     @Operation(summary = "Sesión actual", description = "Email, rol y expiración del token enviado.")
     @GetMapping("/me")
     public SessionResponse me(JwtAuthenticationToken authentication) {

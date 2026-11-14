@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Los hashes con un coste BCrypt distinto se re-cifran tras un login correcto. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("demo")
@@ -43,7 +42,6 @@ class PasswordRehashTest {
         assertThat(rehashed).startsWith("$2a$10$");
         assertThat(new BCryptPasswordEncoder().matches(password, rehashed)).isTrue();
 
-        // El nuevo hash sigue funcionando para iniciar sesión.
         mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(Map.of("email", email, "password", password))))
                 .andExpect(status().isOk());

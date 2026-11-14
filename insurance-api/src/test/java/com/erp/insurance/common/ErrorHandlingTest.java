@@ -21,7 +21,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Verifica que los errores de cliente devuelvan 4xx con ProblemDetail legible (nunca 500). */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("demo")

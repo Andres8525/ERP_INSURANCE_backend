@@ -14,10 +14,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Contratos JSON del módulo de auditoría. Se reflejan 1:1 en
- * fronted/Erp_Insurance/src/app/core/api/api.models.ts.
- */
 public final class AuditDtos {
     private AuditDtos() {}
 

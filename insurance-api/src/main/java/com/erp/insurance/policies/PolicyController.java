@@ -17,7 +17,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static com.erp.insurance.policies.PolicyDtos.*;
 
-/** Pólizas vinculadas a un paciente (paso 3 del stepper de afiliación y perfil del paciente). */
 @RestController
 @Tag(name = "Pólizas", description = "Pólizas vinculadas a un paciente")
 @RequestMapping("/api/patients/{patientId}/policies")
@@ -83,7 +82,6 @@ public class PolicyController {
         policies.delete(requirePolicy(patientId, policyId));
     }
 
-    /** Un paciente no puede tener dos pólizas vigentes o pendientes con periodos que se crucen. */
     private void rejectOverlap(UUID patientId, LocalDate start, LocalDate end, UUID excludeId, PolicyStatus status) {
         if (status == PolicyStatus.TERMINATED) return;
         UUID exclude = excludeId == null ? NO_POLICY : excludeId;

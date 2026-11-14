@@ -24,7 +24,6 @@ public class ClaimsController {
         this.claims = claims;
     }
 
-    /** Siniestros agrupados por estado para el tablero Kanban. */
     @Operation(summary = "Pipeline Kanban", description = "Siniestros agrupados por OPEN, IN_REVIEW, APPROVED y REJECTED.")
     @GetMapping("/pipeline")
     public Map<ClaimStatus, List<ClaimResponse>> pipeline() {
@@ -54,7 +53,6 @@ public class ClaimsController {
         return claims.update(id, request);
     }
 
-    /** Mueve una tarjeta entre columnas del Kanban y registra el cambio en el historial. */
     @Operation(summary = "Cambiar estado", description = "Mueve el siniestro de columna y registra el cambio en su historial.")
     @PatchMapping("/{id}/status")
     public ClaimResponse changeStatus(@PathVariable UUID id, @Valid @RequestBody ChangeStatusRequest request) {

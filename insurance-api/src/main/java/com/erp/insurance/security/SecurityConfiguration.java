@@ -41,7 +41,6 @@ import java.util.List;
 public class SecurityConfiguration {
     @Bean
     PasswordEncoder passwordEncoder(@Value("${app.security.bcrypt-strength:10}") int strength) {
-        // 10 es el mínimo recomendado por OWASP; 12 tarda ~4x más y en Render free (0.1 CPU) supera los 2 s por login.
         return new AdaptiveBCryptPasswordEncoder(strength);
     }
 
@@ -50,7 +49,7 @@ public class SecurityConfiguration {
                                                 UserDetailsPasswordService passwordUpgrades) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(users);
         provider.setPasswordEncoder(encoder);
-        // Tras un login correcto, re-cifra hashes con un coste distinto al configurado.
+
         provider.setUserDetailsPasswordService(passwordUpgrades);
         return new ProviderManager(provider);
     }
@@ -100,8 +99,7 @@ public class SecurityConfiguration {
     @Bean
     CorsConfigurationSource corsConfigurationSource(@Value("${app.cors.allowed-origins}") String origins) {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Patrones (no "*" suelto): permiten despliegues de vista previa como https://*.vercel.app
-        // sin abrir la API a cualquier origen.
+
         configuration.setAllowedOriginPatterns(Arrays.stream(origins.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));

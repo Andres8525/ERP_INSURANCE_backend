@@ -15,8 +15,7 @@ public final class EmailLookup {
         try {
             byte[] key = EncryptionKeys.current();
             byte[] label = "email-lookup-v1".getBytes(StandardCharsets.UTF_8);
-            // El buffer reserva 19 bytes para la etiqueta (15) y deja 4 en cero; se mantiene así
-            // para que los hashes ya almacenados sigan siendo válidos.
+
             byte[] lookupKey = MessageDigest.getInstance("SHA-256").digest(
                     ByteBuffer.allocate(key.length + 19).put(key).put(label).array());
             Mac mac = Mac.getInstance("HmacSHA256");

@@ -13,10 +13,6 @@ import java.util.UUID;
 public interface PolicyRepository extends JpaRepository<PolicyEntity, UUID> {
     List<PolicyEntity> findByPatientIdOrderByCoverageStartDesc(UUID patientId);
 
-    /**
-     * ¿Existe otra póliza no terminada del paciente cuyo periodo se cruza con [start, end]?
-     * {@code excludeId} nunca es null (PostgreSQL no infiere el tipo de un UUID nulo).
-     */
     @Query("""
             select count(p) > 0 from PolicyEntity p
             where p.patient.id = :patientId and p.status <> :terminated

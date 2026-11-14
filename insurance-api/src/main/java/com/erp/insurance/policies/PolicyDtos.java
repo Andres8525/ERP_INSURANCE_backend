@@ -12,7 +12,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
-/** Contratos JSON de pólizas (reflejados en api.models.ts del frontend). */
 public final class PolicyDtos {
     private PolicyDtos() {}
 
@@ -25,7 +24,6 @@ public final class PolicyDtos {
             @NotNull @DecimalMin("0.00") @Digits(integer = 10, fraction = 2) BigDecimal premiumAmount,
             PolicyStatus status) {}
 
-    /** Actualización parcial de una póliza: solo se modifican los campos enviados. */
     public record UpdatePolicyRequest(
             @Size(min = 1, max = 200) String insurer,
             @Size(max = 120) String planName,

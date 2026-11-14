@@ -9,10 +9,6 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * Documentación OpenAPI (Swagger UI en /api/docs). Declara el esquema Bearer JWT para que
- * el botón "Authorize" permita probar los endpoints protegidos con el token de /api/auth/login.
- */
 @Configuration
 public class OpenApiConfiguration {
     private static final String BEARER = "bearerAuth";

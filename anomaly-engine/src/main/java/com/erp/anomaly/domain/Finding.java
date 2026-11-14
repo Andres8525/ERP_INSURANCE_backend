@@ -10,7 +10,6 @@ public record Finding(String rule, FindingType type, Severity severity, RecordTy
                       String patientId, String title, String description, String source, int confidence,
                       String fieldLabel, String currentValue, String conflictingValue, String evidence,
                       String suggestedField, String suggestedValue) {
-
     public Finding {
         Objects.requireNonNull(rule, "rule");
         Objects.requireNonNull(type, "type");

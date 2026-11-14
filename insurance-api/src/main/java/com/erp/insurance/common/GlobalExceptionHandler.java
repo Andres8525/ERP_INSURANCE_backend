@@ -23,14 +23,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Respuestas de error uniformes en formato RFC 7807 (ProblemDetail).
- * Añade a los errores de validación un mapa {@code errors} campo → mensaje para que el frontend
- * pueda mostrarlos junto a cada input.
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
-
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(@NonNull MethodArgumentNotValidException ex,
                                                                   @NonNull HttpHeaders headers,
@@ -47,7 +41,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.badRequest().headers(headers).body(problem);
     }
 
-    /** JSON mal formado, valores de enum inválidos o campos desconocidos. */
     @Override
     protected ResponseEntity<Object> handleHttpMessageNotReadable(@NonNull HttpMessageNotReadableException ex,
                                                                   @NonNull HttpHeaders headers,
@@ -70,7 +63,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.badRequest().headers(headers).body(problem);
     }
 
-    /** Parámetros de consulta fuera de rango (p. ej. size=500): 400 en lugar de 500. */
     @ExceptionHandler(ConstraintViolationException.class)
     public ProblemDetail handleConstraintViolation(ConstraintViolationException ex) {
         Map<String, String> errors = new LinkedHashMap<>();
@@ -84,7 +76,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem;
     }
 
-    /** Restricciones de base de datos (únicos, claves foráneas): 409 en lugar de 500. */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ProblemDetail handleDataIntegrity(DataIntegrityViolationException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,

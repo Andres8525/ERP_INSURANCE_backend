@@ -7,7 +7,6 @@ import org.hibernate.annotations.UuidGenerator;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Historial de cambios de estado de un siniestro. */
 @Entity
 @Table(name = "claim_status_history")
 public class ClaimStatusHistoryEntity {

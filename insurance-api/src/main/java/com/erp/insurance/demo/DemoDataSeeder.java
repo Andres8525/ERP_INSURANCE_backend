@@ -37,15 +37,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Carga datos ficticios para la presentación (perfil demo). Simula la salida del motor de IA
- * con hallazgos preconfigurados; no hay modelo real ejecutándose.
- * Ningún dato corresponde a personas reales.
- */
 @Component
 @ConditionalOnProperty(name = "app.demo.seed", havingValue = "true")
 public class DemoDataSeeder implements ApplicationRunner {
-    /** Contraseña compartida por los usuarios demo. Solo válida en el perfil demo. */
     public static final String DEMO_PASSWORD = "NexoDemo2026!";
     public static final String DEMO_ADMIN = "admin@nexo.demo";
 
@@ -159,7 +153,6 @@ public class DemoDataSeeder implements ApplicationRunner {
                                 "Sin actividad", "Política de retención documental")
                         .detectedAt(now.minus(Duration.ofDays(2)))));
 
-        // Hallazgos ya resueltos este mes, para los indicadores de la bandeja.
         for (int i = 0; i < 3; i++) {
             DataAnomalyEntity resolved = new DataAnomalyEntity(AnomalyType.DUPLICATE, AnomalySeverity.YELLOW,
                     "Duplicado consolidado", "Fichas consolidadas por el equipo de auditoría.",
