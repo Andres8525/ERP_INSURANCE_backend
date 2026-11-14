@@ -30,14 +30,19 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      # Sesión de 4 h: evita volver a iniciar sesión durante una demostración.
       - key: JWT_TTL_MINUTES
-        value: "60"
+        value: "240"
+      # BCrypt 10: login ~4x más rápido que con 12 en la CPU compartida del plan free.
+      - key: BCRYPT_STRENGTH
+        value: "10"
       # URL del frontend (Vercel), p. ej. https://erp-insurance.vercel.app,https://*.vercel.app
       - key: FRONTEND_ORIGINS
         sync: false
       # Los datos demo ya están en Supabase; no volver a sembrar.
       - key: DEMO_SEED
         value: "false"
-      # Plan free = 512 MB de RAM.
+      # Plan free = 512 MB de RAM. ExitOnOutOfMemoryError hace que Render reinicie el servicio
+      # en lugar de dejar una JVM sin memoria respondiendo con errores.
       - key: JAVA_OPTS
-        value: "-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -Xss512k -XX:TieredStopAtLevel=1"
+        value: "-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -Xss512k -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError"
