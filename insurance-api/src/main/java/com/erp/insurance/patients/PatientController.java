@@ -47,6 +47,7 @@ public class PatientController {
         patient.setEmail(normalizedEmail);
         patient.setEmailLookupHash(EmailLookup.hash(normalizedEmail));
         patient.setPhone(request.phone());
+        patient.setCity(blankToNull(request.city()));
         patient.setDateOfBirth(request.dateOfBirth());
         patient.setHouseholdIncome(request.householdIncome() == null ? null : request.householdIncome().toPlainString());
         patient.setAcaEligibilityStatus(request.acaEligibilityStatus() == null ? AcaEligibilityStatus.PENDING : request.acaEligibilityStatus());
@@ -90,6 +91,7 @@ public class PatientController {
             patient.setEmailLookupHash(hash);
         }
         if (request.phone() != null) patient.setPhone(request.phone());
+        if (request.city() != null) patient.setCity(blankToNull(request.city()));
         if (request.dateOfBirth() != null) patient.setDateOfBirth(request.dateOfBirth());
         if (request.householdIncome() != null) patient.setHouseholdIncome(request.householdIncome().toPlainString());
         if (request.acaEligibilityStatus() != null) patient.setAcaEligibilityStatus(request.acaEligibilityStatus());
@@ -110,5 +112,9 @@ public class PatientController {
         } catch (org.springframework.dao.DataIntegrityViolationException exception) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Patient has related records and cannot be deleted");
         }
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

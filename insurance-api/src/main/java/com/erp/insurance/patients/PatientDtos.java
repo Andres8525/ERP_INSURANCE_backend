@@ -21,6 +21,7 @@ public final class PatientDtos {
             @NotBlank @Size(max = 100) String lastName,
             @NotBlank @Pattern(regexp = EMAIL_PATTERN, message = EMAIL_MESSAGE) @Size(max = 320) String email,
             @Pattern(regexp = PHONE_PATTERN, message = PHONE_MESSAGE) @Size(max = 32) String phone,
+            @Size(max = 120) String city,
             @NotBlank @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$") String dateOfBirth,
             @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal householdIncome,
             AcaEligibilityStatus acaEligibilityStatus,
@@ -31,18 +32,19 @@ public final class PatientDtos {
             @Size(max = 100) String lastName,
             @Pattern(regexp = EMAIL_PATTERN, message = EMAIL_MESSAGE) @Size(max = 320) String email,
             @Pattern(regexp = PHONE_PATTERN, message = PHONE_MESSAGE) @Size(max = 32) String phone,
+            @Size(max = 120) String city,
             @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$") String dateOfBirth,
             @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal householdIncome,
             AcaEligibilityStatus acaEligibilityStatus,
             AccountStatus accountStatus) {}
 
-    public record PatientResponse(UUID id, String firstName, String lastName, String email, String phone,
+    public record PatientResponse(UUID id, String crmId, String firstName, String lastName, String email, String phone, String city,
                                  String dateOfBirth, BigDecimal householdIncome,
                                  AcaEligibilityStatus acaEligibilityStatus, AccountStatus accountStatus,
                                  Instant createdAt) {
         static PatientResponse from(PatientEntity patient) {
-            return new PatientResponse(patient.getId(), patient.getFirstName(), patient.getLastName(), patient.getEmail(),
-                    patient.getPhone(), patient.getDateOfBirth(), patient.getHouseholdIncome() == null ? null : new BigDecimal(patient.getHouseholdIncome()),
+            return new PatientResponse(patient.getId(), patient.getCrmId(), patient.getFirstName(), patient.getLastName(),
+                    patient.getEmail(), patient.getPhone(), patient.getCity(), patient.getDateOfBirth(), patient.getHouseholdIncome() == null ? null : new BigDecimal(patient.getHouseholdIncome()),
                     patient.getAcaEligibilityStatus(), patient.getAccountStatus(), patient.getCreatedAt());
         }
     }
