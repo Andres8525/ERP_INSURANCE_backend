@@ -121,10 +121,14 @@ docker build -f anomaly-engine/Dockerfile -t erp-anomaly-engine .               
 
 ## Clientes CRM y prima cero
 
-- Cada paciente tiene un **CRM ID** legible (`CRMID-7K2M9QXA`), generado al darlo de alta; la migración `V3` asigna uno a los registros existentes y `V4` les pone el prefijo `CRMID-` y añade la **ciudad** (cifrada).
+- Cada paciente tiene un identificador **CRMID** legible (`CRMID-7K2M9QXA`), generado al darlo de alta. La migración `V3` añade la **ciudad** (cifrada) y asigna un identificador a los registros existentes; `V4` les pone el prefijo `CRMID-`.
 - `GET /api/clients` resume cada cliente con su plan médico vigente (activo en vigor, o el más reciente) y una descripción breve, por ejemplo: *Simple Silver EPO de Oscar Health, prima $0 por subsidio ACA · Miami · Elegible ACA*.
 - `GET /api/clients/{id}/pdf` genera con OpenPDF una ficha con datos del cliente, plan vigente e historial de pólizas.
 - **Prima $0:** las pólizas aceptan `premiumAmount: 0` (planes con crédito fiscal ACA completo) y el motor de anomalías ya no la marca como error; solo señala primas ausentes, negativas o superiores a 2.500 USD.
+
+## Arranque en Render con Supabase
+
+El perfil `supabase` limita cuánto puede esperar la conexión al pooler: `connectTimeout` 15 s, `loginTimeout` 20 s y `socketTimeout` 60 s (variables `DB_CONNECT_TIMEOUT`, `DB_LOGIN_TIMEOUT`, `DB_SOCKET_TIMEOUT`), y Flyway reintenta la conexión 5 veces cada 10 s (`FLYWAY_CONNECT_RETRIES`). Así, si el pooler acepta la conexión pero no responde, el arranque falla con un error visible en los logs en lugar de quedarse esperando hasta que Render cancele el despliegue por no abrir el puerto.
 
 ## Soporte para Workers del frontend
 

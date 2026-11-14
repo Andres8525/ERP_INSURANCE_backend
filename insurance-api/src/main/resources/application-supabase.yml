@@ -8,13 +8,20 @@ spring:
       idle-timeout: 120000
       keepalive-time: 300000
       max-lifetime: 1500000
+      initialization-fail-timeout: 60000
       data-source-properties:
         sslmode: ${DB_SSLMODE:require}
         ApplicationName: erp-insurance-api
+        connectTimeout: ${DB_CONNECT_TIMEOUT:15}
+        loginTimeout: ${DB_LOGIN_TIMEOUT:20}
+        socketTimeout: ${DB_SOCKET_TIMEOUT:60}
+        tcpKeepAlive: true
   flyway:
     schemas: ${DB_SCHEMA:erp}
     default-schema: ${DB_SCHEMA:erp}
     create-schemas: true
+    connect-retries: ${FLYWAY_CONNECT_RETRIES:5}
+    connect-retries-interval: 10s
   jpa:
     properties:
       hibernate:
