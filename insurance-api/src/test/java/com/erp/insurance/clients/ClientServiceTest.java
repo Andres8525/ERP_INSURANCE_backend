@@ -62,6 +62,6 @@ class ClientServiceTest {
         Set<String> generated = new HashSet<>();
         for (int i = 0; i < 2_000; i++) generated.add(CrmIds.next());
         assertThat(generated).hasSize(2_000).allMatch(CrmIds::isValid);
-        assertThat(generated).noneMatch(id -> id.matches(".*[01IO].*"));
+        assertThat(generated).allMatch(id -> id.startsWith("CRMID-")).noneMatch(id -> id.substring(6).matches(".*[01IO].*"));
     }
 }
