@@ -121,10 +121,17 @@ docker build -f anomaly-engine/Dockerfile -t erp-anomaly-engine .               
 
 ## Clientes CRM y prima cero
 
-- Cada paciente tiene un **CRM ID** legible (`CRM-7K2M9QXA`), generado al darlo de alta; la migración `V3` asigna uno a los registros existentes y añade la **ciudad** (cifrada).
+- Cada paciente tiene un **CRM ID** legible (`CRMID-7K2M9QXA`), generado al darlo de alta; la migración `V3` asigna uno a los registros existentes y `V4` les pone el prefijo `CRMID-` y añade la **ciudad** (cifrada).
 - `GET /api/clients` resume cada cliente con su plan médico vigente (activo en vigor, o el más reciente) y una descripción breve, por ejemplo: *Simple Silver EPO de Oscar Health, prima $0 por subsidio ACA · Miami · Elegible ACA*.
 - `GET /api/clients/{id}/pdf` genera con OpenPDF una ficha con datos del cliente, plan vigente e historial de pólizas.
 - **Prima $0:** las pólizas aceptan `premiumAmount: 0` (planes con crédito fiscal ACA completo) y el motor de anomalías ya no la marca como error; solo señala primas ausentes, negativas o superiores a 2.500 USD.
+
+## Soporte para Workers del frontend
+
+- **Catálogos médicos** (`/api/catalogs/**`): públicos porque no contienen PHI, con `Cache-Control: public, max-age=86400, stale-while-revalidate` y `ETag` (304 al revalidar). El Service Worker del frontend los sirve con Cache-First.
+- **Dataset de facturación** (`/api/analytics/billing-records.csv`): CSV determinista (mismo `seed`, mismos datos) con códigos CIE-10, servicio, valor, aseguradora, ciudad, edad y sexo; incluye algunos códigos inválidos a propósito para probar la validación del Web Worker. Se transmite por streaming y con gzip.
+- **Idempotency-Key**: las escrituras (`POST/PUT/PATCH/DELETE` bajo `/api`) que traen esta cabecera se ejecutan una sola vez; si la cola offline del Service Worker reenvía la misma petición, la API devuelve la respuesta original con `Idempotent-Replayed: true`.
+- **Aislamiento entre orígenes**: la API responde con `Cross-Origin-Resource-Policy: cross-origin` y expone `ETag`, `Content-Disposition` e `Idempotent-Replayed` por CORS, compatible con un frontend que usa `Cross-Origin-Embedder-Policy: require-corp`.
 
 ## Seguridad
 
@@ -161,7 +168,11 @@ Esto es una base técnica, no una certificación HIPAA: producción requiere TLS
 | GET | `/api/audit/summary` | `{open, critical, review, resolvedThisMonth}` |
 | GET | `/api/clients?q=` | Clientes CRM: `crmId`, nombre, contacto, ciudad, edad, plan vigente (`zeroPremium`) y `description` |
 | GET | `/api/clients/{id}` | Resumen CRM de un cliente |
-| GET | `/api/clients/{id}/pdf` | Ficha del cliente en PDF (adjunto, sin caché) |
+| GET | `/api/clients/{id}/pdf?disposition=inline\|attachment` | Ficha del cliente en PDF: `inline` para la vista previa, `attachment` (por defecto) para descargar |
+| GET | `/api/catalogs` | Versión de los catálogos (pública) |
+| GET | `/api/catalogs/icd10?q=&chapter=` | Catálogo CIE-10 (público, `Cache-Control` 1 día + `ETag`) |
+| GET | `/api/catalogs/medications?q=&controlled=` | Catálogo de medicamentos (público, cacheable) |
+| GET | `/api/analytics/billing-records.csv?count=&seed=` | Registros de facturación sintéticos tipo RIPS (CSV por streaming, máx. 200.000) |
 | POST | `/api/audit/scan` | Ejecuta el motor gRPC → `{analyzedRecords, findings, created, alreadyKnown, engineMode, engineVersion, appliedRules, correlationId, durationMs}` |
 | POST | `/api/audit/resolve-batch` | `{ids: [uuid], action: "ARCHIVAR_DEFINITIVO" \| "AUTOCORREGIR"}` → 200 `{processed, action, ids}` |
 
@@ -183,6 +194,7 @@ Los tipos TypeScript equivalentes están en `fronted/src/app/core/api/api.models
 
 - `DetectionRulesTest`, `AnomalyEngineGrpcServiceTest`: reglas del motor, orden de prioridad, streaming, `INVALID_ARGUMENT` y eco de la cabecera de correlación.
 - `GrpcAnomalyDetectorTest`: llamada remota real por red, fallback en proceso y fallo explícito sin fallback.
+- `CatalogApiTest`, `AnalyticsApiTest`, `BillingRecordGeneratorTest`, `IdempotencyApiTest`, `CrossOriginHeadersTest`: catálogos y ETag, CSV de facturación, repetición idempotente y cabeceras de aislamiento.
 - `ClientsApiTest`, `ClientServiceTest`: listado CRM, búsqueda, plan vigente, prima cero y PDF.
 - `AnomalyScanTest`: análisis desde la API, deduplicación, corrección automática y validación de correos sin dominio.
 
