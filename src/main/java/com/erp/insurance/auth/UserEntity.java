@@ -48,6 +48,7 @@ public class UserEntity {
     public UUID getId() { return id; }
     public String getEmail() { return email; }
     public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String value) { passwordHash = value; }
     public UserRole getRole() { return role; }
     public boolean isActive() { return active; }
 }

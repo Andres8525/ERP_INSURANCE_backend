@@ -16,7 +16,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.core.userdetails.UserDetailsPasswordService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -42,13 +42,16 @@ public class SecurityConfiguration {
     @Bean
     PasswordEncoder passwordEncoder(@Value("${app.security.bcrypt-strength:10}") int strength) {
         // 10 es el mínimo recomendado por OWASP; 12 tarda ~4x más y en Render free (0.1 CPU) supera los 2 s por login.
-        return new BCryptPasswordEncoder(strength);
+        return new AdaptiveBCryptPasswordEncoder(strength);
     }
 
     @Bean
-    AuthenticationManager authenticationManager(UserDetailsService users, PasswordEncoder encoder) {
+    AuthenticationManager authenticationManager(UserDetailsService users, PasswordEncoder encoder,
+                                                UserDetailsPasswordService passwordUpgrades) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(users);
         provider.setPasswordEncoder(encoder);
+        // Tras un login correcto, re-cifra hashes con un coste distinto al configurado.
+        provider.setUserDetailsPasswordService(passwordUpgrades);
         return new ProviderManager(provider);
     }
 
