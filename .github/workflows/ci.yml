@@ -18,7 +18,7 @@ jobs:
           java-version: "21"
           cache: maven
 
-      - name: Compilar y ejecutar pruebas (perfil demo, H2 en memoria)
+      - name: Compilar y probar contratos, anomaly-engine e insurance-api
         run: |
           chmod +x mvnw
           ./mvnw -B verify
@@ -28,5 +28,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: surefire-reports
-          path: target/surefire-reports/
+          path: '**/target/surefire-reports/'
           if-no-files-found: ignore
