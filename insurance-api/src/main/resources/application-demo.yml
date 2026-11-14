@@ -1,6 +1,3 @@
-# Perfil de demostración: no requiere PostgreSQL ni variables de entorno.
-# Usa H2 en memoria, crea el esquema con Hibernate y carga datos ficticios (DemoDataSeeder).
-# NO usar con datos reales: los secretos de abajo son públicos.
 spring:
   datasource:
     url: jdbc:h2:mem:erp_insurance;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
@@ -17,7 +14,6 @@ app:
     jwt-secret: ${JWT_SECRET:demo-only-jwt-secret-change-me-0123456789abcdef}
     jwt-ttl-minutes: ${JWT_TTL_MINUTES:480}
   encryption:
-    # 32 bytes en Base64, solo para demo.
     key: ${ENCRYPTION_KEY:ZGVtby1vbmx5LWVuY3J5cHRpb24ta2V5LTMyYnl0ZXM=}
   demo:
     seed: true

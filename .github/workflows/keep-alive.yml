@@ -1,10 +1,5 @@
 name: Keep alive
 
-# Render (plan free) suspende el servicio tras 15 min sin tráfico y el arranque en frío tarda ~1 min.
-# Este workflow hace ping cada 10 min a /actuator/health, que además consulta la base de datos:
-# mantiene despierta la API y activo el proyecto de Supabase.
-# Notas: GitHub puede retrasar las ejecuciones programadas unos minutos y las desactiva
-# tras 60 días sin actividad en el repositorio. Un solo servicio 24/7 cabe en las 750 h/mes de Render free.
 on:
   schedule:
     - cron: "*/10 * * * *"
@@ -17,7 +12,6 @@ jobs:
     steps:
       - name: Ping a la API
         env:
-          # Se puede cambiar con una variable del repositorio (Settings > Variables > RENDER_HEALTH_URL).
           HEALTH_URL: ${{ vars.RENDER_HEALTH_URL || 'https://erp-insurance-api.onrender.com/actuator/health' }}
         run: |
           for attempt in 1 2 3; do
