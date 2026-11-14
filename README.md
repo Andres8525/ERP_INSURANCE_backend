@@ -59,6 +59,14 @@ Notas:
 - El plan free se suspende tras ~15 min sin tráfico; la primera petición posterior tarda alrededor de un minuto.
 - `JAVA_OPTS` ajusta la JVM a los 512 MB del plan free.
 
+## Rendimiento y disponibilidad en Render
+
+- **Keep-alive:** `.github/workflows/keep-alive.yml` hace ping a `/actuator/health` cada 10 min para que Render free no suspenda el servicio (y Supabase no pause el proyecto). Se puede lanzar a mano desde *Actions → Keep alive → Run workflow*.
+- **Login rápido:** BCrypt con coste 10 (`BCRYPT_STRENGTH`). Los hashes con otro coste se re-cifran automáticamente en el siguiente login correcto.
+- **Arranque en frío más corto:** la imagen ejecuta el JAR desempaquetado con un archivo CDS (`app.jsa`) generado durante el build.
+- **Menos consultas y menos bytes:** `default_batch_fetch_size` elimina consultas N+1 y las respuestas JSON van comprimidas con gzip.
+- **Autorrecuperación:** `-XX:+ExitOnOutOfMemoryError` hace que Render reinicie el servicio si la JVM se queda sin memoria; el health check de Render también lo reinicia si deja de responder.
+
 ## Docker
 
 ```powershell
