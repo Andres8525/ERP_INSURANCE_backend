@@ -11,7 +11,9 @@ RUN ./mvnw -q -B package -DskipTests
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 RUN useradd --system --uid 10001 erp
-COPY --from=build /app/target/insurance-api-*.jar app.jar
+COPY --from=build /app/target/insurance-api-*.jar /tmp/app.jar
+# JAR desempaquetado (app.jar + lib/): la JVM arranca más rápido que con el "fat jar" anidado.
+RUN java -Djarmode=tools -jar /tmp/app.jar extract --destination /app     && rm /tmp/app.jar && chown -R erp /app
 USER erp
 EXPOSE 8080
 # Opciones de la JVM; Render las sobrescribe desde render.yaml. El puerto llega en PORT (o SERVER_PORT).
