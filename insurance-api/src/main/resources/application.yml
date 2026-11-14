@@ -15,7 +15,7 @@ spring:
     name: erp-insurance-api
   config:
     # Variables locales en backend/.env (ignorado por git). Las variables de entorno reales tienen prioridad.
-    import: optional:file:.env[.properties]
+    import: optional:file:.env[.properties],optional:file:../.env[.properties]
   profiles:
     # Sin SPRING_PROFILES_ACTIVE la API arranca en modo demo (H2 en memoria + datos semilla).
     # PostgreSQL propio: SPRING_PROFILES_ACTIVE=prod. Supabase: SPRING_PROFILES_ACTIVE=supabase.
@@ -69,6 +69,11 @@ app:
   cors:
     # Orígenes o patrones separados por coma, p. ej. https://mi-app.vercel.app,https://*.vercel.app
     allowed-origins: ${FRONTEND_ORIGINS:http://localhost:4200,http://localhost:3000}
+  anomaly-engine:
+    address: ${ANOMALY_ENGINE_ADDRESS:}
+    tls: ${ANOMALY_ENGINE_TLS:false}
+    deadline: ${ANOMALY_ENGINE_DEADLINE:8s}
+    fallback-in-process: ${ANOMALY_ENGINE_FALLBACK:true}
   bootstrap:
     admin-email: ${BOOTSTRAP_ADMIN_EMAIL:}
     admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}
