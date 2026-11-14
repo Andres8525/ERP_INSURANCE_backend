@@ -61,7 +61,7 @@ class AnomalyEngineGrpcServiceTest {
                         .setEmail("ana@correo.com").setPhone("(305) 555-0100").setDateOfBirth("1980-01-01"))
                 .addPolicies(PolicySnapshot.newBuilder().setId("pol1").setPatientId("p2").setInsurer("Oscar Health")
                         .setPlanName("Gold ACA").setCoverageStart("2026-01-01").setCoverageEnd("2026-12-31")
-                        .setPremiumAmount("0").setStatus(PolicyStatus.POLICY_STATUS_ACTIVE))
+                        .setPremiumAmount("-1.00").setStatus(PolicyStatus.POLICY_STATUS_ACTIVE))
                 .build();
     }
 

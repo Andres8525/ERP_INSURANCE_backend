@@ -27,7 +27,7 @@ public final class PremiumRangeRule implements DetectionRule {
 
     private Optional<Finding> inspect(PolicyRecord policy) {
         BigDecimal premium = policy.premiumAmount();
-        boolean missing = premium == null || premium.signum() <= 0;
+        boolean missing = premium == null || premium.signum() < 0;
         boolean tooHigh = !missing && premium.compareTo(MAX_MONTHLY_PREMIUM) > 0;
         if (!missing && !tooHigh) return Optional.empty();
         return Optional.of(Finding.builder(id())
@@ -36,10 +36,10 @@ public final class PremiumRangeRule implements DetectionRule {
                 .source("Facturación")
                 .confidence(missing ? 97 : 80)
                 .policy(policy)
-                .title(missing ? "Prima mensual sin valor" : "Prima mensual fuera de rango")
+                .title(missing ? "Prima mensual sin valor válido" : "Prima mensual fuera de rango")
                 .description("La prima de " + policy.planName() + " (" + policy.insurer() + ") requiere revisión.")
-                .comparison("Prima mensual", premium == null ? "-" : premium.toPlainString(), "0.01 - " + MAX_MONTHLY_PREMIUM)
-                .evidence("Rango esperado para planes ACA individuales")
+                .comparison("Prima mensual", premium == null ? "-" : premium.toPlainString(), "0.00 - " + MAX_MONTHLY_PREMIUM)
+                .evidence("Rango esperado para planes ACA individuales; $0 es válido con subsidio completo")
                 .build());
     }
 }

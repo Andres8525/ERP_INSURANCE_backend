@@ -122,15 +122,16 @@ class DetectionRulesTest {
     }
 
     @Test
-    void premiumsOutsideTheExpectedRangeAreFlagged() {
+    void zeroPremiumIsValidButNegativeOrExcessivePremiumsAreFlagged() {
         List<Finding> findings = run(new PremiumRangeRule(), List.of(), List.of(
-                policy("zero", "p1", TODAY, TODAY.plusMonths(6), "0", PolicyState.PENDING),
+                policy("zero", "p1", TODAY, TODAY.plusMonths(6), "0.00", PolicyState.ACTIVE),
+                policy("negative", "p1", TODAY, TODAY.plusMonths(6), "-5.00", PolicyState.PENDING),
                 policy("high", "p1", TODAY, TODAY.plusMonths(6), "4999.99", PolicyState.ACTIVE),
                 policy("ok", "p1", TODAY, TODAY.plusMonths(6), "482.16", PolicyState.ACTIVE),
                 policy("closed", "p1", TODAY, TODAY.plusMonths(6), null, PolicyState.TERMINATED)));
 
         assertThat(findings).extracting(Finding::recordId, Finding::severity)
-                .containsExactly(org.assertj.core.groups.Tuple.tuple("zero", Severity.RED),
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("negative", Severity.RED),
                         org.assertj.core.groups.Tuple.tuple("high", Severity.YELLOW));
     }
 }
