@@ -59,6 +59,10 @@
             <version>${springdoc.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.erp</groupId>
             <artifactId>grpc-contracts</artifactId>
         </dependency>
