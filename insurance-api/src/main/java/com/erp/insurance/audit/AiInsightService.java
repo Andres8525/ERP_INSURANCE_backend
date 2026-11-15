@@ -6,6 +6,7 @@ import com.erp.insurance.integration.ai.AiAssistant.AiCompletion;
 import com.erp.insurance.integration.ai.AiAssistant.AiPrompt;
 import com.erp.insurance.integration.ai.AiProperties;
 import com.erp.insurance.integration.ai.AiUnavailableException;
+import com.erp.insurance.retention.RetentionDtos.RetentionProfile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -74,6 +75,17 @@ public class AiInsightService {
                     assistant.model(), 0, 0, 0, 0, clock.instant(), false);
         }
         return cachedOrFresh(snapshot.prompt(), snapshot.analyzed(), refresh);
+    }
+
+    public AiInsightResponse retentionPlan(RetentionProfile profile, boolean refresh) {
+        int candidates = profile.summary().archive() + profile.summary().delete() + profile.summary().legalHold();
+        if (candidates == 0) {
+            AiReport empty = new AiReport("No hay expedientes para archivar ni eliminar: el archivo cumple la política de retención.",
+                    null, "BAJO", List.of(), List.of(), List.of());
+            return new AiInsightResponse(AiReportParser.toMarkdown(empty), empty, assistant.provider(),
+                    assistant.model(), 0, 0, 0, 0, clock.instant(), false);
+        }
+        return cachedOrFresh(AiPromptFactory.retention(profile), profile.summary().profiled(), refresh);
     }
 
     public AiInsightResponse explain(UUID id) {

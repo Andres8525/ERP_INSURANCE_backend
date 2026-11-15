@@ -173,6 +173,29 @@ class AiInsightApiTest {
     }
 
     @Test
+    void aiPlanSendsOnlyAggregatedFigures() throws Exception {
+        when(assistant.complete(any())).thenReturn(new AiCompletion("""
+                {"summary":"Hay 4 registros con retención cumplida.","riskLevel":"medio",
+                 "priorities":[{"title":"Pólizas con retención cumplida","severity":"Crítica","recordType":"Pólizas","count":3}],
+                 "actions":[{"title":"Respaldar antes de eliminar","owner":"TI"}],"prevention":["Revisión trimestral"]}""",
+                "openai/gpt-oss-120b", 500, 300, 1500));
+
+        mvc.perform(post("/api/audit/retention/ai-plan").param("refresh", "true")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.report.summary").value("Hay 4 registros con retención cumplida."))
+                .andExpect(jsonPath("$.report.riskLevel").value("MEDIO"))
+                .andExpect(jsonPath("$.report.priorities[0].count").value(3));
+
+        ArgumentCaptor<AiPrompt> prompt = ArgumentCaptor.forClass(AiPrompt.class);
+        verify(assistant).complete(prompt.capture());
+        assertThat(prompt.getValue().structured()).isTrue();
+        assertThat(prompt.getValue().user())
+                .contains("Política: archivar tras 12 meses", "eliminar tras 7 años", "Lotes por categoría", "Pólizas:")
+                .doesNotContain("CRMID-", "H-CIG", "Cigna", "Patricia", "CL-48");
+    }
+
+    @Test
     void requiresAuthentication() throws Exception {
         mvc.perform(post("/api/audit/ai/insights").param("refresh", "true")).andExpect(status().isUnauthorized());
     }

@@ -177,6 +177,8 @@ Errores (`ProblemDetail` con `reason`): sin clave → 503 `NOT_CONFIGURED`; clav
 
 La respuesta incluye el resumen (conteos, GB por decisión, costo mensual actual y optimizado con `RETENTION_HOT_USD_PER_GB` 0,023 y `RETENTION_ARCHIVE_USD_PER_GB` 0,004, ahorro y proyección anual por cada 10.000 registros), el desglose por categoría y la lista de candidatos ordenada (eliminar, archivar, retención legal). Los tamaños por documento son estimaciones configurables (`app.retention.*-mb`). El plazo legal real depende de la jurisdicción y de los contratos con las aseguradoras: ajústalo con `RETENTION_YEARS`.
 
+`POST /api/audit/retention/ai-plan` envía al proveedor de IA solo cifras agregadas (conteos por categoría y decisión, rangos de inactividad, GB y costos), nunca CRMID, números de póliza ni nombres, y devuelve un plan priorizado con el mismo reporte estructurado que las recomendaciones de auditoría.
+
 Con `DEMO_SEED=true` el seed agrega una sola vez un historial de pólizas terminadas (prefijo `H-`) y siniestros cerrados de años anteriores para que el perfil tenga casos de archivo, eliminación y retención legal.
 
 ## Seguridad
@@ -224,6 +226,7 @@ Esto es una base técnica, no una certificación HIPAA: producción requiere TLS
 | POST | `/api/audit/ai/insights?refresh=false` | Diagnóstico IA de las anomalías abiertas → `{report: {summary, impact, riskLevel, priorities[], actions[], prevention[]}, content (Markdown), provider, model, analyzedAnomalies, promptTokens, completionTokens, latencyMs, generatedAt, cached}` |
 | POST | `/api/audit/anomalies/{id}/ai-explanation` | Explicación IA de una anomalía y cómo corregirla (mismo formato) |
 | GET | `/api/audit/retention` | Perfil de retención: `{summary, rules, categories[], candidates[], generatedAt}` |
+| POST | `/api/audit/retention/ai-plan?refresh=false` | Plan de archivo y eliminación generado por IA a partir de cifras agregadas (mismo formato que `/ai/insights`) |
 | POST | `/api/audit/resolve-batch` | `{ids: [uuid], action: "ARCHIVAR_DEFINITIVO" \| "AUTOCORREGIR"}` → 200 `{processed, action, ids}` |
 
 Notas del contrato:
