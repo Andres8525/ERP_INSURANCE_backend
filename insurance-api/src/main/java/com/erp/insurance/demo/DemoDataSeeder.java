@@ -43,6 +43,7 @@ public class DemoDataSeeder implements ApplicationRunner {
     public static final String DEMO_PASSWORD = "NexoDemo2026!";
     public static final String DEMO_ADMIN = "admin@nexo.demo";
 
+    static final String HISTORY_PREFIX = "H-";
     private static final Logger log = LoggerFactory.getLogger(DemoDataSeeder.class);
 
     private final UserRepository users;
@@ -65,7 +66,10 @@ public class DemoDataSeeder implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        if (users.count() > 0) return;
+        if (users.count() > 0) {
+            seedHistory();
+            return;
+        }
         Instant now = Instant.now();
 
         String hash = encoder.encode(DEMO_PASSWORD);
@@ -176,7 +180,48 @@ public class DemoDataSeeder implements ApplicationRunner {
             anomalies.save(resolved);
         }
 
+        seedHistory();
         log.info("Demo data loaded. Login with {} / {} (demo profile only)", DEMO_ADMIN, DEMO_PASSWORD);
+    }
+
+    private void seedHistory() {
+        boolean seeded = policies.findAll().stream().anyMatch(policy -> policy.getPolicyNumber() != null
+                && policy.getPolicyNumber().startsWith(HISTORY_PREFIX));
+        if (seeded) return;
+        int year = LocalDate.now().getYear();
+        Instant now = Instant.now();
+        record History(String email, String number, String insurer, String plan, int yearsAgo) {}
+        List<History> history = List.of(
+                new History("patricia.lopez@example.test", "CIG-4420-61203", "Cigna", "Connect Bronze", 9),
+                new History("patricia.lopez@example.test", "CIG-4420-50877", "Cigna", "Connect Silver", 12),
+                new History("elena.morales@example.test", "AMB-2847-30412", "Ambetter", "Essential Care 1", 11),
+                new History("david.williams@exmaple.test", "AET-9910-11804", "Aetna CVS Health", "Silver Value HMO", 8),
+                new History("maria.gonzalez@example.test", "AMB-2847-40955", "Ambetter", "Balanced Care 5", 6),
+                new History("james.rodriguez@example.test", "OSC-5521-00412", "Oscar Health", "Bronze Classic", 5),
+                new History("lucia.martinez@example.test", "BCB-7712-11870", "Florida Blue", "BlueOptions Silver", 4),
+                new History("ana.perez@example.test", "OSC-5521-01022", "Oscar Health", "Simple Bronze", 2));
+        int created = 0;
+        for (History item : history) {
+            PatientEntity patient = patients.findByEmailLookupHash(EmailLookup.hash(item.email())).orElse(null);
+            if (patient == null) continue;
+            int coverageYear = year - item.yearsAgo();
+            policy(patient, HISTORY_PREFIX + item.number(), item.insurer(), item.plan(), LocalDate.of(coverageYear, 1, 1),
+                    LocalDate.of(coverageYear, 12, 31), "310.00", PolicyStatus.TERMINATED, false);
+            created++;
+        }
+        patients.findByEmailLookupHash(EmailLookup.hash("patricia.lopez@example.test")).ifPresent(patient ->
+                claim(patient, "Hospitalización por neumonía (expediente histórico)", "Orlando", ClaimPriority.NORMAL, "4380.00",
+                        List.of(ClaimStatus.OPEN, ClaimStatus.IN_REVIEW, ClaimStatus.APPROVED),
+                        now.minus(Duration.ofDays(365L * 9)), "Transporte médico", "Traslado en ambulancia"));
+        patients.findByEmailLookupHash(EmailLookup.hash("james.rodriguez@example.test")).ifPresent(patient ->
+                claim(patient, "Consulta de urgencias (expediente histórico)", "Orlando", ClaimPriority.NORMAL, "910.00",
+                        List.of(ClaimStatus.OPEN, ClaimStatus.IN_REVIEW, ClaimStatus.APPROVED),
+                        now.minus(Duration.ofDays(365L * 8)), null, null));
+        patients.findByEmailLookupHash(EmailLookup.hash("elena.morales@example.test")).ifPresent(patient ->
+                claim(patient, "Equipo médico duradero (expediente histórico)", "Miami", ClaimPriority.NORMAL, "620.00",
+                        List.of(ClaimStatus.OPEN, ClaimStatus.IN_REVIEW, ClaimStatus.REJECTED),
+                        now.minus(Duration.ofDays(365L * 3)), "Entrega de equipo médico", "Silla de ruedas"));
+        log.info("Historial de retención cargado: {} pólizas terminadas y 3 siniestros cerrados", created);
     }
 
     private PatientEntity patient(String firstName, String lastName, String email, String phone, String dob,

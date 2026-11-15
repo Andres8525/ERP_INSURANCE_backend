@@ -164,6 +164,21 @@ El módulo de auditoría pide a un modelo de lenguaje un diagnóstico de la band
 
 Errores (`ProblemDetail` con `reason`): sin clave → 503 `NOT_CONFIGURED`; clave inválida → 502 `UNAUTHORIZED`; cuenta sin créditos → 502 `NO_CREDITS`; modelo inexistente → 502 `PROVIDER_ERROR`; límite de uso → 429; sin respuesta a tiempo → 504.
 
+## Retención de datos y optimización de nube
+
+`GET /api/audit/retention` (ADMIN/AUDITOR) perfila pólizas, siniestros y expedientes de paciente reales y decide qué hacer con cada uno:
+
+| Decisión | Regla |
+| --- | --- |
+| `KEEP` | Póliza vigente o pendiente, siniestro abierto o en revisión, cuenta activa, o actividad en los últimos `RETENTION_ARCHIVE_AFTER_MONTHS` meses (12) |
+| `ARCHIVE` | Sin actividad desde hace más de 12 meses y menos del plazo de retención: mover a almacenamiento de archivo (frío) |
+| `DELETE` | Plazo de retención cumplido (`RETENTION_YEARS`, 7 años por defecto): eliminación definitiva |
+| `LEGAL_HOLD` | El paciente tiene un siniestro en trámite o una anomalía crítica abierta: se conserva aunque el plazo se haya cumplido |
+
+La respuesta incluye el resumen (conteos, GB por decisión, costo mensual actual y optimizado con `RETENTION_HOT_USD_PER_GB` 0,023 y `RETENTION_ARCHIVE_USD_PER_GB` 0,004, ahorro y proyección anual por cada 10.000 registros), el desglose por categoría y la lista de candidatos ordenada (eliminar, archivar, retención legal). Los tamaños por documento son estimaciones configurables (`app.retention.*-mb`). El plazo legal real depende de la jurisdicción y de los contratos con las aseguradoras: ajústalo con `RETENTION_YEARS`.
+
+Con `DEMO_SEED=true` el seed agrega una sola vez un historial de pólizas terminadas (prefijo `H-`) y siniestros cerrados de años anteriores para que el perfil tenga casos de archivo, eliminación y retención legal.
+
 ## Seguridad
 
 - JWT HS256 (`POST /api/auth/login`); todos los endpoints excepto login, OpenAPI y health exigen `Authorization: Bearer <token>`.
@@ -208,6 +223,7 @@ Esto es una base técnica, no una certificación HIPAA: producción requiere TLS
 | GET | `/api/audit/ai/status` | `{enabled, provider, model}`: proveedor de IA activo (`groq`, `grok`, `gemini`, `openrouter`) |
 | POST | `/api/audit/ai/insights?refresh=false` | Diagnóstico IA de las anomalías abiertas → `{report: {summary, impact, riskLevel, priorities[], actions[], prevention[]}, content (Markdown), provider, model, analyzedAnomalies, promptTokens, completionTokens, latencyMs, generatedAt, cached}` |
 | POST | `/api/audit/anomalies/{id}/ai-explanation` | Explicación IA de una anomalía y cómo corregirla (mismo formato) |
+| GET | `/api/audit/retention` | Perfil de retención: `{summary, rules, categories[], candidates[], generatedAt}` |
 | POST | `/api/audit/resolve-batch` | `{ids: [uuid], action: "ARCHIVAR_DEFINITIVO" \| "AUTOCORREGIR"}` → 200 `{processed, action, ids}` |
 
 Notas del contrato:

@@ -75,6 +75,11 @@ app:
     max-anomalies: ${AI_MAX_ANOMALIES:200}
     cache-ttl: ${AI_CACHE_TTL:10m}
     reasoning-effort: ${AI_REASONING_EFFORT:}
+  retention:
+    archive-after-months: ${RETENTION_ARCHIVE_AFTER_MONTHS:12}
+    retention-years: ${RETENTION_YEARS:7}
+    hot-usd-per-gb-month: ${RETENTION_HOT_USD_PER_GB:0.023}
+    archive-usd-per-gb-month: ${RETENTION_ARCHIVE_USD_PER_GB:0.004}
   bootstrap:
     admin-email: ${BOOTSTRAP_ADMIN_EMAIL:}
     admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}
