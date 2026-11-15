@@ -23,6 +23,7 @@ class GrokAiAssistantTest {
     private final AtomicReference<String> requestBody = new AtomicReference<>();
     private final AtomicReference<String> path = new AtomicReference<>();
     private volatile int status = 200;
+    private volatile String errorBody = "{\"error\":\"x\"}";
     private volatile String responseBody = """
             {"id":"r1","object":"chat.completion","model":"grok-4.7","system_fingerprint":"fp",
              "choices":[{"index":0,"finish_reason":"stop","message":{"role":"assistant","content":"  ## Diagnóstico\\nTodo bien  ","refusal":null}}],
@@ -35,7 +36,7 @@ class GrokAiAssistantTest {
             path.set(exchange.getRequestURI().getPath());
             authorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
             requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
-            byte[] bytes = (status == 200 ? responseBody : "{\"error\":\"x\"}").getBytes(StandardCharsets.UTF_8);
+            byte[] bytes = (status == 200 ? responseBody : errorBody).getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(status, bytes.length);
             exchange.getResponseBody().write(bytes);
@@ -85,6 +86,22 @@ class GrokAiAssistantTest {
         assertThatThrownBy(() -> assistant().complete(new AiPrompt("s", "u")))
                 .extracting(error -> ((AiUnavailableException) error).reason())
                 .isEqualTo(AiUnavailableException.Reason.RATE_LIMITED);
+    }
+
+    @Test
+    void distinguishesMissingCreditsFromInvalidKey() {
+        status = 403;
+        errorBody = """
+                {"code":"permission-denied","error":"Your team t1 has either used all available credits or reached its monthly spending limit."}""";
+        assertThatThrownBy(() -> assistant().complete(new AiPrompt("s", "u")))
+                .hasMessageContaining("créditos")
+                .extracting(error -> ((AiUnavailableException) error).reason())
+                .isEqualTo(AiUnavailableException.Reason.NO_CREDITS);
+
+        errorBody = "{\"code\":\"permission-denied\",\"error\":\"Model not allowed for this API key\"}";
+        assertThatThrownBy(() -> assistant().complete(new AiPrompt("s", "u")))
+                .extracting(error -> ((AiUnavailableException) error).reason())
+                .isEqualTo(AiUnavailableException.Reason.UNAUTHORIZED);
     }
 
     @Test

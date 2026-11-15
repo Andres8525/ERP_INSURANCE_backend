@@ -82,14 +82,26 @@ public class GrokAiAssistant implements AiAssistant {
 
     private AiUnavailableException translate(HttpStatusCode status, RestClientResponseException exception) {
         log.warn("Grok respondió HTTP {}", status.value());
+        if (status.value() == 402 || (status.value() == 403 && mentionsBilling(exception.getResponseBodyAsString()))) {
+            return new AiUnavailableException(AiUnavailableException.Reason.NO_CREDITS,
+                    "La cuenta de xAI no tiene créditos o alcanzó su límite de gasto mensual: recárguela en console.x.ai > Billing",
+                    exception);
+        }
         return switch (status.value()) {
             case 401, 403 -> new AiUnavailableException(AiUnavailableException.Reason.UNAUTHORIZED,
-                    "La API key de Grok es inválida o no tiene créditos", exception);
+                    "La API key de Grok es inválida, fue revocada o no tiene permiso para el modelo " + properties.model(),
+                    exception);
             case 429 -> new AiUnavailableException(AiUnavailableException.Reason.RATE_LIMITED,
                     "Límite de uso de Grok alcanzado, intente de nuevo en unos segundos", exception);
             default -> new AiUnavailableException(AiUnavailableException.Reason.PROVIDER_ERROR,
                     "Grok respondió con error HTTP " + status.value(), exception);
         };
+    }
+
+    static boolean mentionsBilling(String body) {
+        if (body == null) return false;
+        String text = body.toLowerCase(java.util.Locale.ROOT);
+        return text.contains("credit") || text.contains("spending limit") || text.contains("billing");
     }
 
     record ChatRequest(String model, List<Message> messages, double temperature,

@@ -10,9 +10,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.ErrorResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -73,9 +75,12 @@ public class AiInsightService {
                 case NOT_CONFIGURED -> HttpStatus.SERVICE_UNAVAILABLE;
                 case RATE_LIMITED -> HttpStatus.TOO_MANY_REQUESTS;
                 case TIMEOUT -> HttpStatus.GATEWAY_TIMEOUT;
-                case UNAUTHORIZED, PROVIDER_ERROR -> HttpStatus.BAD_GATEWAY;
+                case UNAUTHORIZED, NO_CREDITS, PROVIDER_ERROR -> HttpStatus.BAD_GATEWAY;
             };
-            throw new ResponseStatusException(status, exception.getMessage(), exception);
+            ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, exception.getMessage());
+            problem.setTitle("Asistente IA no disponible");
+            problem.setProperty("reason", exception.reason().name());
+            throw new ErrorResponseException(status, problem, exception);
         }
     }
 

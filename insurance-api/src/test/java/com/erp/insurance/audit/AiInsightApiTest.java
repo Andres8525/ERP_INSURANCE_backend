@@ -102,12 +102,22 @@ class AiInsightApiTest {
         when(assistant.complete(any())).thenThrow(new AiUnavailableException(
                 AiUnavailableException.Reason.NOT_CONFIGURED, "El análisis con IA no está configurado: defina GROK_API_KEY"));
         mvc.perform(post("/api/audit/ai/insights").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-                .andExpect(status().isServiceUnavailable());
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.reason").value("NOT_CONFIGURED"))
+                .andExpect(jsonPath("$.detail").value("El análisis con IA no está configurado: defina GROK_API_KEY"));
 
         doThrow(new AiUnavailableException(AiUnavailableException.Reason.RATE_LIMITED, "Límite"))
                 .when(assistant).complete(any());
         mvc.perform(post("/api/audit/ai/insights").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-                .andExpect(status().isTooManyRequests());
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.reason").value("RATE_LIMITED"));
+
+        doThrow(new AiUnavailableException(AiUnavailableException.Reason.NO_CREDITS, "Sin créditos"))
+                .when(assistant).complete(any());
+        mvc.perform(post("/api/audit/ai/insights").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.reason").value("NO_CREDITS"))
+                .andExpect(jsonPath("$.detail").value("Sin créditos"));
     }
 
     @Test

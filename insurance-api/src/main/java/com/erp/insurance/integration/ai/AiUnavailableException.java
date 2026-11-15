@@ -17,5 +17,5 @@ public class AiUnavailableException extends RuntimeException {
         return reason;
     }
 
-    public enum Reason { NOT_CONFIGURED, UNAUTHORIZED, RATE_LIMITED, TIMEOUT, PROVIDER_ERROR }
+    public enum Reason { NOT_CONFIGURED, UNAUTHORIZED, NO_CREDITS, RATE_LIMITED, TIMEOUT, PROVIDER_ERROR }
 }
