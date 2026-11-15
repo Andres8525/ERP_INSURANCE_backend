@@ -149,10 +149,11 @@ El módulo de auditoría puede pedir a Grok un diagnóstico de la bandeja de ano
 | `GROK_READ_TIMEOUT` | `60s` | Tiempo máximo de respuesta |
 | `GROK_MAX_TOKENS` | `900` | Límite de tokens de salida (controla el costo) |
 | `GROK_MAX_ANOMALIES` | `200` | Anomalías abiertas que entran en el resumen |
+| `GROK_CACHE_TTL` | `10m` | Tiempo que se reutiliza una respuesta si la bandeja no cambió (`cached: true`); `0s` desactiva la caché |
 
 **Privacidad:** a Grok solo se envían metadatos anonimizados (tipo, severidad, título genérico de la regla, campo afectado, origen y confianza). Nunca nombres, correos, teléfonos, fechas de nacimiento, CRMID ni valores de los campos.
 
-Errores: sin clave → 503; clave inválida o sin créditos → 502; límite de uso → 429; sin respuesta a tiempo → 504.
+Errores (`ProblemDetail` con `reason`): sin clave → 503 `NOT_CONFIGURED`; clave inválida → 502 `UNAUTHORIZED`; cuenta sin créditos → 502 `NO_CREDITS`; límite de uso → 429; sin respuesta a tiempo → 504.
 
 ## Seguridad
 
@@ -196,7 +197,7 @@ Esto es una base técnica, no una certificación HIPAA: producción requiere TLS
 | GET | `/api/analytics/billing-records.csv?count=&seed=` | Registros de facturación sintéticos tipo RIPS (CSV por streaming, máx. 200.000) |
 | POST | `/api/audit/scan` | Ejecuta el motor gRPC → `{analyzedRecords, findings, created, alreadyKnown, engineMode, engineVersion, appliedRules, correlationId, durationMs}` |
 | GET | `/api/audit/ai/status` | `{enabled, provider, model}`: si Grok está configurado |
-| POST | `/api/audit/ai/insights` | Diagnóstico IA de las anomalías abiertas → `{content (Markdown), provider, model, analyzedAnomalies, promptTokens, completionTokens, latencyMs, generatedAt}` |
+| POST | `/api/audit/ai/insights?refresh=false` | Diagnóstico IA de las anomalías abiertas → `{content (Markdown), provider, model, analyzedAnomalies, promptTokens, completionTokens, latencyMs, generatedAt, cached}` |
 | POST | `/api/audit/anomalies/{id}/ai-explanation` | Explicación IA de una anomalía y cómo corregirla (mismo formato) |
 | POST | `/api/audit/resolve-batch` | `{ids: [uuid], action: "ARCHIVAR_DEFINITIVO" \| "AUTOCORREGIR"}` → 200 `{processed, action, ids}` |
 

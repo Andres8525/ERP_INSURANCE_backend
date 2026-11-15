@@ -62,10 +62,10 @@ public class AuditController {
         return ai.status();
     }
 
-    @Operation(summary = "Recomendaciones IA de la bandeja", description = "Envía a Grok un resumen anonimizado de las anomalías abiertas y devuelve diagnóstico, prioridades y acciones.")
+    @Operation(summary = "Recomendaciones IA de la bandeja", description = "Envía a Grok un resumen anonimizado de las anomalías abiertas y devuelve diagnóstico, prioridades y acciones. Si la bandeja no cambió responde desde caché (cached=true), salvo con refresh=true.")
     @PostMapping("/ai/insights")
-    public AiInsightResponse aiInsights() {
-        return ai.insights();
+    public AiInsightResponse aiInsights(@RequestParam(defaultValue = "false") boolean refresh) {
+        return ai.insights(refresh);
     }
 
     @Operation(summary = "Explicar una anomalía con IA", description = "Explicación y pasos de corrección generados por Grok sin enviar datos personales.")

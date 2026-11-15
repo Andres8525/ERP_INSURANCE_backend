@@ -73,6 +73,7 @@ app:
     temperature: ${GROK_TEMPERATURE:0.2}
     max-tokens: ${GROK_MAX_TOKENS:900}
     max-anomalies: ${GROK_MAX_ANOMALIES:200}
+    cache-ttl: ${GROK_CACHE_TTL:10m}
   bootstrap:
     admin-email: ${BOOTSTRAP_ADMIN_EMAIL:}
     admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}

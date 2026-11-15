@@ -14,7 +14,8 @@ public record AiProperties(@DefaultValue("grok") String provider,
                            @DefaultValue("60s") Duration readTimeout,
                            @DefaultValue("0.2") double temperature,
                            @DefaultValue("900") int maxTokens,
-                           @DefaultValue("200") int maxAnomalies) {
+                           @DefaultValue("200") int maxAnomalies,
+                           @DefaultValue("10m") Duration cacheTtl) {
     public boolean configured() {
         return apiKey != null && !apiKey.isBlank();
     }

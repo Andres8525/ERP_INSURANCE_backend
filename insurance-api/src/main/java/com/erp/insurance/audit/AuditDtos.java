@@ -56,5 +56,11 @@ public final class AuditDtos {
     public record AiStatusResponse(boolean enabled, String provider, String model) {}
 
     public record AiInsightResponse(String content, String provider, String model, int analyzedAnomalies,
-                                    int promptTokens, int completionTokens, long latencyMs, Instant generatedAt) {}
+                                    int promptTokens, int completionTokens, long latencyMs, Instant generatedAt,
+                                    boolean cached) {
+        AiInsightResponse fromCache() {
+            return new AiInsightResponse(content, provider, model, analyzedAnomalies, promptTokens, completionTokens,
+                    latencyMs, generatedAt, true);
+        }
+    }
 }

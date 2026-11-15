@@ -53,7 +53,7 @@ class GrokAiAssistantTest {
     private GrokAiAssistant assistant() {
         AiProperties properties = new AiProperties("grok", "xai-test-key",
                 "http://127.0.0.1:" + server.getAddress().getPort() + "/v1", "grok-4.7",
-                Duration.ofSeconds(2), Duration.ofSeconds(5), 0.2, 300, 50);
+                Duration.ofSeconds(2), Duration.ofSeconds(5), 0.2, 300, 50, Duration.ofMinutes(10));
         return new GrokAiAssistant(properties, RestClient.builder());
     }
 
@@ -115,7 +115,7 @@ class GrokAiAssistantTest {
     @Test
     void disabledAssistantExplainsMissingKey() {
         AiProperties properties = new AiProperties("grok", "", "https://api.x.ai/v1", "grok-4.7",
-                Duration.ofSeconds(1), Duration.ofSeconds(1), 0.2, 100, 10);
+                Duration.ofSeconds(1), Duration.ofSeconds(1), 0.2, 100, 10, Duration.ZERO);
         assertThat(properties.configured()).isFalse();
         DisabledAiAssistant disabled = new DisabledAiAssistant(properties);
         assertThat(disabled.available()).isFalse();

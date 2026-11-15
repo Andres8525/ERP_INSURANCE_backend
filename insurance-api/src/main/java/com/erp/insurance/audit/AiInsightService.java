@@ -6,6 +6,7 @@ import com.erp.insurance.integration.ai.AiAssistant.AiCompletion;
 import com.erp.insurance.integration.ai.AiAssistant.AiPrompt;
 import com.erp.insurance.integration.ai.AiProperties;
 import com.erp.insurance.integration.ai.AiUnavailableException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -17,7 +18,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -30,9 +35,18 @@ public class AiInsightService {
     private final AiProperties properties;
     private final DataAnomalyRepository anomalies;
     private final TransactionTemplate readOnly;
+    private final Clock clock;
+    private final Map<String, CachedInsight> cache = new ConcurrentHashMap<>();
 
+    @Autowired
     public AiInsightService(AiAssistant assistant, AiProperties properties, DataAnomalyRepository anomalies,
                             PlatformTransactionManager transactions) {
+        this(assistant, properties, anomalies, transactions, Clock.systemUTC());
+    }
+
+    AiInsightService(AiAssistant assistant, AiProperties properties, DataAnomalyRepository anomalies,
+                     PlatformTransactionManager transactions, Clock clock) {
+        this.clock = clock;
         this.assistant = assistant;
         this.properties = properties;
         this.anomalies = anomalies;
@@ -44,7 +58,7 @@ public class AiInsightService {
         return new AiStatusResponse(assistant.available(), assistant.provider(), assistant.model());
     }
 
-    public AiInsightResponse insights() {
+    public AiInsightResponse insights(boolean refresh) {
         Snapshot snapshot = Objects.requireNonNull(readOnly.execute(status -> {
             Page<DataAnomalyEntity> open = anomalies.findByResolutionStatus(AnomalyResolutionStatus.OPEN,
                     PageRequest.of(0, Math.max(1, properties.maxAnomalies()), Sort.by(Sort.Direction.DESC, "createdAt")));
@@ -53,23 +67,35 @@ public class AiInsightService {
         }));
         if (snapshot.analyzed() == 0) {
             return new AiInsightResponse("No hay anomalías abiertas: la bandeja de auditoría está al día.",
-                    assistant.provider(), assistant.model(), 0, 0, 0, 0, Instant.now());
+                    assistant.provider(), assistant.model(), 0, 0, 0, 0, clock.instant(), false);
         }
-        return respond(snapshot.prompt(), snapshot.analyzed());
+        return cachedOrFresh(snapshot.prompt(), snapshot.analyzed(), refresh);
     }
 
     public AiInsightResponse explain(UUID id) {
         AiPrompt prompt = Objects.requireNonNull(readOnly.execute(status -> anomalies.findById(id)
                 .map(AiPromptFactory::explain)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Anomaly not found"))));
-        return respond(prompt, 1);
+        return cachedOrFresh(prompt, 1, false);
+    }
+
+    private AiInsightResponse cachedOrFresh(AiPrompt prompt, int analyzed, boolean refresh) {
+        String key = assistant.model() + "|" + prompt.user();
+        Instant now = clock.instant();
+        cache.values().removeIf(entry -> entry.expiresAt().isBefore(now));
+        CachedInsight hit = cache.get(key);
+        if (!refresh && hit != null) return hit.response().fromCache();
+        AiInsightResponse fresh = respond(prompt, analyzed);
+        Duration ttl = properties.cacheTtl();
+        if (ttl != null && ttl.isPositive()) cache.put(key, new CachedInsight(fresh, now.plus(ttl)));
+        return fresh;
     }
 
     private AiInsightResponse respond(AiPrompt prompt, int analyzed) {
         try {
             AiCompletion completion = assistant.complete(prompt);
             return new AiInsightResponse(completion.content(), assistant.provider(), completion.model(), analyzed,
-                    completion.promptTokens(), completion.completionTokens(), completion.latencyMs(), Instant.now());
+                    completion.promptTokens(), completion.completionTokens(), completion.latencyMs(), clock.instant(), false);
         } catch (AiUnavailableException exception) {
             HttpStatus status = switch (exception.reason()) {
                 case NOT_CONFIGURED -> HttpStatus.SERVICE_UNAVAILABLE;
@@ -85,4 +111,6 @@ public class AiInsightService {
     }
 
     private record Snapshot(AiPrompt prompt, int analyzed) {}
+
+    private record CachedInsight(AiInsightResponse response, Instant expiresAt) {}
 }
