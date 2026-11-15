@@ -181,6 +181,16 @@ La respuesta incluye el resumen (conteos, GB por decisión, costo mensual actual
 
 Con `DEMO_SEED=true` el seed agrega una sola vez un historial de pólizas terminadas (prefijo `H-`) y siniestros cerrados de años anteriores para que el perfil tenga casos de archivo, eliminación y retención legal.
 
+## Tiempo real (`realtime-gateway`)
+
+Microservicio Node.js + TypeScript en [`realtime-gateway/`](realtime-gateway/README.md) que comparte el JWT de `insurance-api`:
+
+- **Short polling** `GET /api/realtime/lab-status-polling` para resultados de laboratorio y RIPS (cada 3 s, `ETag`/`304`).
+- **SSE** `GET /api/realtime/vitals-stream` para signos vitales de UCI y avisos de farmacia (`Last-Event-ID`, heartbeat).
+- **WebSocket** `/ws/medical-hub` para telemedicina, bloqueo y edición colaborativa de historias clínicas, interconsultas, Código Azul y turnos, con registro `Map<string, AuthenticatedSocket>`, ping/pong, fan-out por lotes con `setImmediate` y backplane Redis Pub/Sub (fallback en memoria) para escalar sin sticky sessions.
+
+En Render se despliega como un segundo servicio (`erp-realtime-gateway` en `render.yaml`) con `JWT_SECRET` igual al de la API, `FRONTEND_ORIGINS` y, para varias réplicas, `REDIS_URL`.
+
 ## Seguridad
 
 - JWT HS256 (`POST /api/auth/login`); todos los endpoints excepto login, OpenAPI y health exigen `Authorization: Bearer <token>`.
