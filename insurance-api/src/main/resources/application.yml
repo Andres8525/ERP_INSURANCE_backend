@@ -71,9 +71,10 @@ app:
     connect-timeout: ${AI_CONNECT_TIMEOUT:5s}
     read-timeout: ${AI_READ_TIMEOUT:60s}
     temperature: ${AI_TEMPERATURE:0.2}
-    max-tokens: ${AI_MAX_TOKENS:1500}
+    max-tokens: ${AI_MAX_TOKENS:4000}
     max-anomalies: ${AI_MAX_ANOMALIES:200}
     cache-ttl: ${AI_CACHE_TTL:10m}
+    reasoning-effort: ${AI_REASONING_EFFORT:}
   bootstrap:
     admin-email: ${BOOTSTRAP_ADMIN_EMAIL:}
     admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}

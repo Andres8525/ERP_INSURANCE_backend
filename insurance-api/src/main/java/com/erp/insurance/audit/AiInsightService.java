@@ -21,12 +21,14 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Objects;
 import java.util.UUID;
 
 import static com.erp.insurance.audit.AuditDtos.AiInsightResponse;
+import static com.erp.insurance.audit.AuditDtos.AiReport;
 import static com.erp.insurance.audit.AuditDtos.AiStatusResponse;
 
 @Service
@@ -66,8 +68,10 @@ public class AiInsightService {
                     open.getNumberOfElements());
         }));
         if (snapshot.analyzed() == 0) {
-            return new AiInsightResponse("No hay anomalías abiertas: la bandeja de auditoría está al día.",
-                    assistant.provider(), assistant.model(), 0, 0, 0, 0, clock.instant(), false);
+            AiReport empty = new AiReport("No hay anomalías abiertas: la bandeja de auditoría está al día.", null,
+                    "BAJO", List.of(), List.of(), List.of());
+            return new AiInsightResponse(AiReportParser.toMarkdown(empty), empty, assistant.provider(),
+                    assistant.model(), 0, 0, 0, 0, clock.instant(), false);
         }
         return cachedOrFresh(snapshot.prompt(), snapshot.analyzed(), refresh);
     }
@@ -94,7 +98,9 @@ public class AiInsightService {
     private AiInsightResponse respond(AiPrompt prompt, int analyzed) {
         try {
             AiCompletion completion = assistant.complete(prompt);
-            return new AiInsightResponse(completion.content(), assistant.provider(), completion.model(), analyzed,
+            AiReport report = prompt.structured() ? AiReportParser.parse(completion.content()).orElse(null) : null;
+            String content = report == null ? completion.content() : AiReportParser.toMarkdown(report);
+            return new AiInsightResponse(content, report, assistant.provider(), completion.model(), analyzed,
                     completion.promptTokens(), completion.completionTokens(), completion.latencyMs(), clock.instant(), false);
         } catch (AiUnavailableException exception) {
             HttpStatus status = switch (exception.reason()) {

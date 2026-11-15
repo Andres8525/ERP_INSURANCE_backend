@@ -39,16 +39,17 @@ class AiPromptFactoryTest {
         AiPrompt prompt = AiPromptFactory.insights(sample, 9);
 
         assertThat(prompt.user())
-                .contains("9 anomalías abiertas", "2 críticas y 2 en revisión", "## Prioridades")
+                .contains("9 anomalías abiertas", "2 críticas y 2 en revisión", "\"priorities\"")
                 .doesNotContain("RED", "YELLOW", "PATIENT", "POLICY_OVERLAP", "Ana Pérez", "Lucía", "305-555");
         assertThat(prompt.system()).contains("Nunca uses tablas, HTML");
+        assertThat(prompt.structured()).isTrue();
     }
 
     @Test
     void explanationDescribesTheAnomalyInSpanish() {
         AiPrompt prompt = AiPromptFactory.explain(sample.get(1));
         assertThat(prompt.user())
-                .contains("Severidad: Crítica", "Registro afectado: Póliza", "Categoría: Pólizas solapadas", "## Cómo corregirlo")
+                .contains("Severidad: Crítica", "Registro afectado: Póliza", "Categoría: Pólizas solapadas", "\"actions\"")
                 .doesNotContain("2026-01-01", "POLICY");
     }
 }

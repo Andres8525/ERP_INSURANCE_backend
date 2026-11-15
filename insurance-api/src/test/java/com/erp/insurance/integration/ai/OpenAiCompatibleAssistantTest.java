@@ -53,7 +53,7 @@ class OpenAiCompatibleAssistantTest {
     private OpenAiCompatibleAssistant assistant() {
         AiProperties properties = new AiProperties("grok", "xai-test-key",
                 "http://127.0.0.1:" + server.getAddress().getPort() + "/v1", "grok-4.7",
-                Duration.ofSeconds(2), Duration.ofSeconds(5), 0.2, 300, 50, Duration.ofMinutes(10));
+                Duration.ofSeconds(2), Duration.ofSeconds(5), 0.2, 300, 50, Duration.ofMinutes(10), null);
         return new OpenAiCompatibleAssistant(properties, RestClient.builder());
     }
 
@@ -67,11 +67,18 @@ class OpenAiCompatibleAssistantTest {
                 .contains("\"model\":\"grok-4.7\"")
                 .contains("\"max_tokens\":300")
                 .contains("\"role\":\"system\"")
-                .contains("\"content\":\"usuario\"");
+                .contains("\"content\":\"usuario\"")
+                .doesNotContain("response_format", "reasoning_effort");
         assertThat(completion.content()).isEqualTo("## Diagnóstico\nTodo bien");
         assertThat(completion.model()).isEqualTo("grok-4.7");
         assertThat(completion.promptTokens()).isEqualTo(120);
         assertThat(completion.completionTokens()).isEqualTo(45);
+    }
+
+    @Test
+    void requestsJsonModeForStructuredPrompts() {
+        assistant().complete(new AiPrompt("sistema", "usuario", true));
+        assertThat(requestBody.get()).contains("\"response_format\":{\"type\":\"json_object\"}");
     }
 
     @Test
@@ -123,7 +130,7 @@ class OpenAiCompatibleAssistantTest {
     @Test
     void disabledAssistantExplainsMissingKey() {
         AiProperties properties = new AiProperties("grok", "", "https://api.x.ai/v1", "grok-4.7",
-                Duration.ofSeconds(1), Duration.ofSeconds(1), 0.2, 100, 10, Duration.ZERO);
+                Duration.ofSeconds(1), Duration.ofSeconds(1), 0.2, 100, 10, Duration.ZERO, null);
         assertThat(properties.configured()).isFalse();
         DisabledAiAssistant disabled = new DisabledAiAssistant(properties);
         assertThat(disabled.available()).isFalse();

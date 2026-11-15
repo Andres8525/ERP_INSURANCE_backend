@@ -13,9 +13,10 @@ public record AiProperties(@DefaultValue("auto") String provider,
                            @DefaultValue("5s") Duration connectTimeout,
                            @DefaultValue("60s") Duration readTimeout,
                            @DefaultValue("0.2") double temperature,
-                           @DefaultValue("900") int maxTokens,
+                           @DefaultValue("4000") int maxTokens,
                            @DefaultValue("200") int maxAnomalies,
-                           @DefaultValue("10m") Duration cacheTtl) {
+                           @DefaultValue("10m") Duration cacheTtl,
+                           String reasoningEffort) {
     public boolean configured() {
         return apiKey != null && !apiKey.isBlank();
     }
@@ -35,6 +36,13 @@ public record AiProperties(@DefaultValue("auto") String provider,
 
     public String resolvedModel() {
         return hasText(model) ? model.strip() : resolvedProvider().defaultModel();
+    }
+
+    public String resolvedReasoningEffort() {
+        if (hasText(reasoningEffort)) {
+            return reasoningEffort.strip().equalsIgnoreCase("none") ? null : reasoningEffort.strip().toLowerCase();
+        }
+        return resolvedProvider() == AiProvider.GROQ && resolvedModel().startsWith("openai/gpt-oss") ? "low" : null;
     }
 
     private static boolean hasText(String value) {

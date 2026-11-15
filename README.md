@@ -139,7 +139,7 @@ El perfil `supabase` limita cuánto puede esperar la conexión al pooler: `conne
 
 ## Análisis con IA (Groq, Grok, Gemini u OpenRouter)
 
-El módulo de auditoría pide a un modelo de lenguaje un diagnóstico de la bandeja de anomalías. `AiAssistant` es el puerto; `OpenAiCompatibleAssistant` es el adaptador HTTP (`POST {base-url}/chat/completions`, formato OpenAI), y `DisabledAiAssistant` es el respaldo cuando no hay clave. El proveedor se detecta por el prefijo de la clave, así que en Render basta con definir `AI_API_KEY`.
+El módulo de auditoría pide a un modelo de lenguaje un diagnóstico de la bandeja de anomalías. La respuesta se pide en modo JSON (`response_format: json_object`) y se valida en `AiReportParser`: el endpoint devuelve `report` (resumen, impacto, nivel de riesgo, prioridades, acciones y prevención, sin HTML ni Markdown) y `content` en Markdown generado a partir del reporte; si el modelo no devuelve JSON válido, `report` se omite y `content` trae el texto original. `AiAssistant` es el puerto; `OpenAiCompatibleAssistant` es el adaptador HTTP (`POST {base-url}/chat/completions`, formato OpenAI), y `DisabledAiAssistant` es el respaldo cuando no hay clave. El proveedor se detecta por el prefijo de la clave, así que en Render basta con definir `AI_API_KEY`.
 
 | Proveedor | Prefijo de la clave | URL base | Modelo por defecto | Costo |
 | --- | --- | --- | --- | --- |
@@ -155,7 +155,8 @@ El módulo de auditoría pide a un modelo de lenguaje un diagnóstico de la band
 | `AI_MODEL` | el del proveedor | Para usar otro modelo del mismo proveedor |
 | `AI_BASE_URL` | la del proveedor | Para cualquier otra API compatible con OpenAI |
 | `AI_READ_TIMEOUT` | `60s` | Tiempo máximo de respuesta |
-| `AI_MAX_TOKENS` | `1500` | Límite de tokens de salida |
+| `AI_MAX_TOKENS` | `4000` | Límite de tokens de salida (los modelos que razonan también los gastan al pensar) |
+| `AI_REASONING_EFFORT` | `low` con gpt-oss en Groq | `low`, `medium`, `high` o `none` para no enviarlo |
 | `AI_MAX_ANOMALIES` | `200` | Anomalías abiertas que entran en el resumen |
 | `AI_CACHE_TTL` | `10m` | Tiempo que se reutiliza una respuesta si la bandeja no cambió (`cached: true`); `0s` desactiva la caché |
 
@@ -205,7 +206,7 @@ Esto es una base técnica, no una certificación HIPAA: producción requiere TLS
 | GET | `/api/analytics/billing-records.csv?count=&seed=` | Registros de facturación sintéticos tipo RIPS (CSV por streaming, máx. 200.000) |
 | POST | `/api/audit/scan` | Ejecuta el motor gRPC → `{analyzedRecords, findings, created, alreadyKnown, engineMode, engineVersion, appliedRules, correlationId, durationMs}` |
 | GET | `/api/audit/ai/status` | `{enabled, provider, model}`: proveedor de IA activo (`groq`, `grok`, `gemini`, `openrouter`) |
-| POST | `/api/audit/ai/insights?refresh=false` | Diagnóstico IA de las anomalías abiertas → `{content (Markdown), provider, model, analyzedAnomalies, promptTokens, completionTokens, latencyMs, generatedAt, cached}` |
+| POST | `/api/audit/ai/insights?refresh=false` | Diagnóstico IA de las anomalías abiertas → `{report: {summary, impact, riskLevel, priorities[], actions[], prevention[]}, content (Markdown), provider, model, analyzedAnomalies, promptTokens, completionTokens, latencyMs, generatedAt, cached}` |
 | POST | `/api/audit/anomalies/{id}/ai-explanation` | Explicación IA de una anomalía y cómo corregirla (mismo formato) |
 | POST | `/api/audit/resolve-batch` | `{ids: [uuid], action: "ARCHIVAR_DEFINITIVO" \| "AUTOCORREGIR"}` → 200 `{processed, action, ids}` |
 

@@ -83,6 +83,40 @@ class AiInsightApiTest {
     }
 
     @Test
+    void structuredReportIsParsedAndCleaned() throws Exception {
+        when(assistant.complete(any())).thenReturn(new AiCompletion("""
+                ```json
+                {"summary":"Hay 4 hallazgos <br> críticos.","impact":"Riesgo de doble cobertura.","riskLevel":"high",
+                 "priorities":[{"title":"Pólizas solapadas","severity":"RED","recordType":"Póliza","count":2,
+                   "risk":"Pagos duplicados","action":"Cancelar la póliza más reciente"}],
+                 "actions":[{"title":"Revisar pólizas","owner":"Afiliación","detail":"Confirmar con la aseguradora"}],
+                 "prevention":["Validar fechas al emitir"]}
+                ```""", "openai/gpt-oss-120b", 300, 200, 1200));
+
+        mvc.perform(post("/api/audit/ai/insights").param("refresh", "true").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.report.summary").value("Hay 4 hallazgos críticos."))
+                .andExpect(jsonPath("$.report.riskLevel").value("ALTO"))
+                .andExpect(jsonPath("$.report.priorities[0].severity").value("Crítica"))
+                .andExpect(jsonPath("$.report.priorities[0].count").value(2))
+                .andExpect(jsonPath("$.report.actions[0].owner").value("Afiliación"))
+                .andExpect(jsonPath("$.report.prevention[0]").value("Validar fechas al emitir"))
+                .andExpect(jsonPath("$.content").value(org.hamcrest.Matchers.startsWith("## Resumen\nHay 4 hallazgos críticos.")));
+
+        ArgumentCaptor<AiPrompt> prompt = ArgumentCaptor.forClass(AiPrompt.class);
+        verify(assistant).complete(prompt.capture());
+        assertThat(prompt.getValue().structured()).isTrue();
+    }
+
+    @Test
+    void invalidJsonFallsBackToRawText() throws Exception {
+        when(assistant.complete(any())).thenReturn(new AiCompletion("Texto libre sin JSON", "m", 1, 1, 1));
+        mvc.perform(post("/api/audit/ai/insights").param("refresh", "true").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(jsonPath("$.content").value("Texto libre sin JSON"))
+                .andExpect(jsonPath("$.report").doesNotExist());
+    }
+
+    @Test
     void repeatedInsightsAreServedFromCacheUntilRefresh() throws Exception {
         when(assistant.complete(any())).thenReturn(new AiCompletion("Primera", "grok-4.7", 10, 5, 100));
         mvc.perform(post("/api/audit/ai/insights").param("refresh", "true").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))

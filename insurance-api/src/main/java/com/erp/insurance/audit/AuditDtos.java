@@ -55,12 +55,20 @@ public final class AuditDtos {
 
     public record AiStatusResponse(boolean enabled, String provider, String model) {}
 
-    public record AiInsightResponse(String content, String provider, String model, int analyzedAnomalies,
-                                    int promptTokens, int completionTokens, long latencyMs, Instant generatedAt,
-                                    boolean cached) {
+    public record AiPriority(String title, String severity, String recordType, Integer count, String risk,
+                             String action) {}
+
+    public record AiAction(String title, String owner, String detail) {}
+
+    public record AiReport(String summary, String impact, String riskLevel, List<AiPriority> priorities,
+                           List<AiAction> actions, List<String> prevention) {}
+
+    public record AiInsightResponse(String content, AiReport report, String provider, String model,
+                                    int analyzedAnomalies, int promptTokens, int completionTokens, long latencyMs,
+                                    Instant generatedAt, boolean cached) {
         AiInsightResponse fromCache() {
-            return new AiInsightResponse(content, provider, model, analyzedAnomalies, promptTokens, completionTokens,
-                    latencyMs, generatedAt, true);
+            return new AiInsightResponse(content, report, provider, model, analyzedAnomalies, promptTokens,
+                    completionTokens, latencyMs, generatedAt, true);
         }
     }
 }

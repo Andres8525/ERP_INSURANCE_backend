@@ -9,7 +9,11 @@ public interface AiAssistant {
 
     AiCompletion complete(AiPrompt prompt);
 
-    record AiPrompt(String system, String user) {}
+    record AiPrompt(String system, String user, boolean structured) {
+        public AiPrompt(String system, String user) {
+            this(system, user, false);
+        }
+    }
 
     record AiCompletion(String content, String model, int promptTokens, int completionTokens, long latencyMs) {}
 }

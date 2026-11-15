@@ -21,26 +21,37 @@ final class AiPromptFactory {
             Reglas de estilo obligatorias:
             - Español neutro y profesional, frases cortas y concretas.
             - Usa solo las cifras recibidas; no inventes datos, porcentajes ni normas.
-            - Nunca uses tablas, HTML, etiquetas <br>, separadores --- ni emojis.
+            - Responde siempre en español, aunque los datos contengan términos en inglés.
+            - Nunca uses tablas, HTML, etiquetas <br>, Markdown, separadores --- ni emojis.
             - Nunca muestres códigos internos en mayúsculas (RED, YELLOW, PATIENT, POLICY, POLICY_OVERLAP...): usa las etiquetas en español que recibes.""";
 
     static final String INSIGHTS_FORMAT = """
-            Responde en Markdown con exactamente estas secciones:
-            ## Resumen
-            Dos o tres frases sobre el estado de la bandeja.
-            ## Prioridades
-            Lista numerada, de mayor a menor urgencia, un grupo por línea: **Grupo** (severidad, cantidad): riesgo y acción en una frase.
-            ## Acciones recomendadas
-            Entre 3 y 5 viñetas que empiecen con un verbo e indiquen el equipo responsable.
-            ## Prevención
-            Entre 2 y 4 viñetas con controles para que no se repita.""";
+            Responde solo con un objeto JSON válido, sin texto antes ni después, con esta forma:
+            {
+              "summary": "2 o 3 frases sobre el estado de la bandeja",
+              "impact": "1 frase sobre el riesgo operativo y regulatorio global",
+              "riskLevel": "ALTO | MEDIO | BAJO",
+              "priorities": [
+                {"title": "nombre del grupo tal como se recibió", "severity": "Crítica | Revisión | Mixta",
+                 "recordType": "Paciente | Póliza | Siniestro", "count": 2,
+                 "risk": "riesgo en máximo 20 palabras", "action": "acción inmediata en máximo 20 palabras"}
+              ],
+              "actions": [{"title": "verbo + acción concreta", "owner": "Afiliación | Facturación | Auditoría | Atención al cliente | TI", "detail": "máximo 25 palabras"}],
+              "prevention": ["control preventivo en máximo 20 palabras"]
+            }
+            priorities: un elemento por grupo recibido, en el mismo orden de urgencia (máximo 6).
+            actions: entre 3 y 5. prevention: entre 2 y 4.""";
 
     static final String EXPLAIN_FORMAT = """
-            Responde en Markdown, máximo 150 palabras, con estas secciones:
-            ## Qué ocurre
-            ## Por qué importa
-            ## Cómo corregirlo
-            (lista numerada de 2 a 4 pasos)""";
+            Responde solo con un objeto JSON válido, sin texto antes ni después, con esta forma:
+            {
+              "summary": "qué ocurre, en 1 o 2 frases",
+              "impact": "por qué importa, en 1 frase",
+              "riskLevel": "ALTO | MEDIO | BAJO",
+              "actions": [{"title": "paso concreto que empieza con un verbo", "owner": "equipo responsable", "detail": "máximo 25 palabras"}],
+              "prevention": ["control para que no se repita"]
+            }
+            actions: entre 2 y 4 pasos en orden. prevention: 1 o 2 elementos.""";
 
     private AiPromptFactory() {}
 
@@ -55,7 +66,7 @@ final class AiPromptFactory {
                 .append("Grupos de hallazgos (de mayor a menor urgencia):\n");
         groups(anomalies).forEach(group -> user.append("- ").append(group).append('\n'));
         user.append('\n').append(INSIGHTS_FORMAT);
-        return new AiPrompt(SYSTEM, user.toString());
+        return new AiPrompt(SYSTEM, user.toString(), true);
     }
 
     static AiPrompt explain(DataAnomalyEntity anomaly) {
@@ -74,7 +85,7 @@ final class AiPromptFactory {
                 recordLabel(anomaly.getAffectedRecordType()), orDash(anomaly.getFieldLabel()), orDash(anomaly.getSource()),
                 anomaly.getConfidence() == null ? "-" : anomaly.getConfidence(),
                 AuditService.isAutoCorrectable(anomaly) ? "sí" : "no", EXPLAIN_FORMAT);
-        return new AiPrompt(SYSTEM, user);
+        return new AiPrompt(SYSTEM, user, true);
     }
 
     static List<String> groups(Collection<DataAnomalyEntity> anomalies) {

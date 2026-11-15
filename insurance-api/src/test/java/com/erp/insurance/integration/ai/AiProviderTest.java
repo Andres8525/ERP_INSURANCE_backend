@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AiProviderTest {
     private static AiProperties properties(String provider, String key, String baseUrl, String model) {
         return new AiProperties(provider, key, baseUrl, model, Duration.ofSeconds(5), Duration.ofSeconds(60),
-                0.2, 900, 200, Duration.ofMinutes(10));
+                0.2, 900, 200, Duration.ofMinutes(10), null);
     }
 
     @Test
@@ -32,6 +32,16 @@ class AiProviderTest {
         assertThat(custom.resolvedBaseUrl()).isEqualTo("https://proxy.local/v1");
         assertThat(custom.resolvedModel()).isEqualTo("qwen/qwen3.8-27b");
         assertThat(properties("auto", "unknown-key", null, null).resolvedProvider()).isEqualTo(AiProvider.GROQ);
+    }
+
+    @Test
+    void asksGptOssOnGroqForShortReasoning() {
+        assertThat(properties("auto", "gsk_abc", null, null).resolvedReasoningEffort()).isEqualTo("low");
+        assertThat(properties("auto", "gsk_abc", null, "qwen/qwen3.8-27b").resolvedReasoningEffort()).isNull();
+        assertThat(properties("auto", "xai-abc", null, null).resolvedReasoningEffort()).isNull();
+        AiProperties none = new AiProperties("auto", "gsk_abc", null, null, Duration.ofSeconds(5), Duration.ofSeconds(60),
+                0.2, 900, 200, Duration.ofMinutes(10), "none");
+        assertThat(none.resolvedReasoningEffort()).isNull();
     }
 
     @Test

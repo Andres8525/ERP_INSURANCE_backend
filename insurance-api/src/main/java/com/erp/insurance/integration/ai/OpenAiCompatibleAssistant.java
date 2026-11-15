@@ -1,6 +1,7 @@
 package com.erp.insurance.integration.ai;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import org.springframework.web.client.RestClientResponseException;
 
 import java.net.http.HttpClient;
 import java.util.List;
+import java.util.Map;
 
 public class OpenAiCompatibleAssistant implements AiAssistant {
     private static final Logger log = LoggerFactory.getLogger(OpenAiCompatibleAssistant.class);
@@ -56,7 +58,8 @@ public class OpenAiCompatibleAssistant implements AiAssistant {
     public AiCompletion complete(AiPrompt prompt) {
         ChatRequest request = new ChatRequest(model,
                 List.of(new Message("system", prompt.system()), new Message("user", prompt.user())),
-                properties.temperature(), properties.maxTokens());
+                properties.temperature(), properties.maxTokens(),
+                prompt.structured() ? Map.of("type", "json_object") : null, properties.resolvedReasoningEffort());
         long startedAt = System.nanoTime();
         ChatResponse response;
         try {
@@ -110,8 +113,11 @@ public class OpenAiCompatibleAssistant implements AiAssistant {
         return text.contains("credit") || text.contains("spending limit") || text.contains("billing");
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     record ChatRequest(String model, List<Message> messages, double temperature,
-                       @JsonProperty("max_tokens") int maxTokens) {}
+                       @JsonProperty("max_tokens") int maxTokens,
+                       @JsonProperty("response_format") Map<String, String> responseFormat,
+                       @JsonProperty("reasoning_effort") String reasoningEffort) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record Message(String role, String content) {}
