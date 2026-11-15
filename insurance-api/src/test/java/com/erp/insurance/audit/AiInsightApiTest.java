@@ -118,11 +118,11 @@ class AiInsightApiTest {
     @Test
     void mapsProviderFailuresToHttpStatus() throws Exception {
         when(assistant.complete(any())).thenThrow(new AiUnavailableException(
-                AiUnavailableException.Reason.NOT_CONFIGURED, "El análisis con IA no está configurado: defina GROK_API_KEY"));
+                AiUnavailableException.Reason.NOT_CONFIGURED, "El análisis con IA no está configurado: defina AI_API_KEY"));
         mvc.perform(post("/api/audit/ai/insights").param("refresh", "true").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.reason").value("NOT_CONFIGURED"))
-                .andExpect(jsonPath("$.detail").value("El análisis con IA no está configurado: defina GROK_API_KEY"));
+                .andExpect(jsonPath("$.detail").value("El análisis con IA no está configurado: defina AI_API_KEY"));
 
         doThrow(new AiUnavailableException(AiUnavailableException.Reason.RATE_LIMITED, "Límite"))
                 .when(assistant).complete(any());

@@ -41,8 +41,9 @@ services:
       BOOTSTRAP_ADMIN_EMAIL: admin@nexo.local
       BOOTSTRAP_ADMIN_PASSWORD: LocalAdminPassword2026!
       ANOMALY_ENGINE_ADDRESS: anomaly-engine:9090
-      GROK_API_KEY: ${GROK_API_KEY:-}
-      GROK_MODEL: ${GROK_MODEL:-grok-4.7}
+      AI_PROVIDER: ${AI_PROVIDER:-auto}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
     ports:
       - "8080:8080"
 

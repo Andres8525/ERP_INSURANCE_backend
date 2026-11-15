@@ -15,19 +15,23 @@ import org.springframework.web.client.RestClientResponseException;
 import java.net.http.HttpClient;
 import java.util.List;
 
-public class GrokAiAssistant implements AiAssistant {
-    private static final Logger log = LoggerFactory.getLogger(GrokAiAssistant.class);
+public class OpenAiCompatibleAssistant implements AiAssistant {
+    private static final Logger log = LoggerFactory.getLogger(OpenAiCompatibleAssistant.class);
 
     private final AiProperties properties;
+    private final AiProvider provider;
+    private final String model;
     private final RestClient http;
 
-    public GrokAiAssistant(AiProperties properties, RestClient.Builder builder) {
+    public OpenAiCompatibleAssistant(AiProperties properties, RestClient.Builder builder) {
         this.properties = properties;
+        this.provider = properties.resolvedProvider();
+        this.model = properties.resolvedModel();
         HttpClient client = HttpClient.newBuilder().connectTimeout(properties.connectTimeout()).build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(client);
         factory.setReadTimeout(properties.readTimeout());
         this.http = builder.clone()
-                .baseUrl(properties.baseUrl())
+                .baseUrl(properties.resolvedBaseUrl())
                 .requestFactory(factory)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.apiKey())
                 .build();
@@ -40,17 +44,17 @@ public class GrokAiAssistant implements AiAssistant {
 
     @Override
     public String provider() {
-        return properties.provider();
+        return provider.id();
     }
 
     @Override
     public String model() {
-        return properties.model();
+        return model;
     }
 
     @Override
     public AiCompletion complete(AiPrompt prompt) {
-        ChatRequest request = new ChatRequest(properties.model(),
+        ChatRequest request = new ChatRequest(model,
                 List.of(new Message("system", prompt.system()), new Message("user", prompt.user())),
                 properties.temperature(), properties.maxTokens());
         long startedAt = System.nanoTime();
@@ -67,34 +71,36 @@ public class GrokAiAssistant implements AiAssistant {
             throw translate(exception.getStatusCode(), exception);
         } catch (ResourceAccessException exception) {
             throw new AiUnavailableException(AiUnavailableException.Reason.TIMEOUT,
-                    "Grok no respondió a tiempo", exception);
+                    provider.displayName() + " no respondió a tiempo", exception);
         }
         long latencyMs = (System.nanoTime() - startedAt) / 1_000_000;
         if (response == null || response.choices() == null || response.choices().isEmpty()
                 || response.choices().getFirst().message() == null) {
-            throw new AiUnavailableException(AiUnavailableException.Reason.PROVIDER_ERROR, "Grok devolvió una respuesta vacía");
+            throw new AiUnavailableException(AiUnavailableException.Reason.PROVIDER_ERROR, provider.displayName() + " devolvió una respuesta vacía");
         }
         Usage usage = response.usage() == null ? new Usage(0, 0) : response.usage();
         return new AiCompletion(response.choices().getFirst().message().content().strip(),
-                response.model() == null ? properties.model() : response.model(),
+                response.model() == null ? model : response.model(),
                 usage.promptTokens(), usage.completionTokens(), latencyMs);
     }
 
     private AiUnavailableException translate(HttpStatusCode status, RestClientResponseException exception) {
-        log.warn("Grok respondió HTTP {}", status.value());
+        log.warn("{} respondió HTTP {}", provider.displayName(), status.value());
         if (status.value() == 402 || (status.value() == 403 && mentionsBilling(exception.getResponseBodyAsString()))) {
             return new AiUnavailableException(AiUnavailableException.Reason.NO_CREDITS,
-                    "La cuenta de xAI no tiene créditos o alcanzó su límite de gasto mensual: recárguela en console.x.ai > Billing",
+                    "La cuenta de " + provider.displayName() + " no tiene créditos o alcanzó su límite de gasto: revise " + provider.console(),
                     exception);
         }
         return switch (status.value()) {
             case 401, 403 -> new AiUnavailableException(AiUnavailableException.Reason.UNAUTHORIZED,
-                    "La API key de Grok es inválida, fue revocada o no tiene permiso para el modelo " + properties.model(),
+                    "La API key de " + provider.displayName() + " es inválida, fue revocada o no tiene permiso para el modelo " + model,
                     exception);
             case 429 -> new AiUnavailableException(AiUnavailableException.Reason.RATE_LIMITED,
-                    "Límite de uso de Grok alcanzado, intente de nuevo en unos segundos", exception);
+                    "Límite de uso de " + provider.displayName() + " alcanzado, intente de nuevo en unos segundos", exception);
+            case 404 -> new AiUnavailableException(AiUnavailableException.Reason.PROVIDER_ERROR,
+                    "El modelo " + model + " no existe en " + provider.displayName() + ": revise AI_MODEL", exception);
             default -> new AiUnavailableException(AiUnavailableException.Reason.PROVIDER_ERROR,
-                    "Grok respondió con error HTTP " + status.value(), exception);
+                    provider.displayName() + " respondió con error HTTP " + status.value(), exception);
         };
     }
 

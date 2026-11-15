@@ -14,17 +14,17 @@ public class DisabledAiAssistant implements AiAssistant {
 
     @Override
     public String provider() {
-        return properties.provider();
+        return properties.resolvedProvider().id();
     }
 
     @Override
     public String model() {
-        return properties.model();
+        return properties.resolvedModel();
     }
 
     @Override
     public AiCompletion complete(AiPrompt prompt) {
         throw new AiUnavailableException(AiUnavailableException.Reason.NOT_CONFIGURED,
-                "El análisis con IA no está configurado: defina GROK_API_KEY");
+                "El análisis con IA no está configurado: defina AI_API_KEY");
     }
 }

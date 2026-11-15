@@ -56,19 +56,19 @@ public class AuditController {
         return audit.summary();
     }
 
-    @Operation(summary = "Estado del asistente IA", description = "Indica si Grok está configurado (GROK_API_KEY) y qué modelo se usa.")
+    @Operation(summary = "Estado del asistente IA", description = "Indica si hay proveedor de IA configurado (AI_API_KEY), cuál es y qué modelo usa.")
     @GetMapping("/ai/status")
     public AiStatusResponse aiStatus() {
         return ai.status();
     }
 
-    @Operation(summary = "Recomendaciones IA de la bandeja", description = "Envía a Grok un resumen anonimizado de las anomalías abiertas y devuelve diagnóstico, prioridades y acciones. Si la bandeja no cambió responde desde caché (cached=true), salvo con refresh=true.")
+    @Operation(summary = "Recomendaciones IA de la bandeja", description = "Envía al proveedor de IA (Groq, Grok, Gemini u OpenRouter) un resumen anonimizado de las anomalías abiertas y devuelve diagnóstico, prioridades y acciones. Si la bandeja no cambió responde desde caché (cached=true), salvo con refresh=true.")
     @PostMapping("/ai/insights")
     public AiInsightResponse aiInsights(@RequestParam(defaultValue = "false") boolean refresh) {
         return ai.insights(refresh);
     }
 
-    @Operation(summary = "Explicar una anomalía con IA", description = "Explicación y pasos de corrección generados por Grok sin enviar datos personales.")
+    @Operation(summary = "Explicar una anomalía con IA", description = "Explicación y pasos de corrección generados por la IA sin enviar datos personales.")
     @PostMapping("/anomalies/{id}/ai-explanation")
     public AiInsightResponse aiExplanation(@PathVariable UUID id) {
         return ai.explain(id);

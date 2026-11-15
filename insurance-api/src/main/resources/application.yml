@@ -64,16 +64,16 @@ app:
     deadline: ${ANOMALY_ENGINE_DEADLINE:8s}
     fallback-in-process: ${ANOMALY_ENGINE_FALLBACK:true}
   ai:
-    provider: grok
-    api-key: ${GROK_API_KEY:}
-    base-url: ${GROK_BASE_URL:https://api.x.ai/v1}
-    model: ${GROK_MODEL:grok-4.7}
-    connect-timeout: ${GROK_CONNECT_TIMEOUT:5s}
-    read-timeout: ${GROK_READ_TIMEOUT:60s}
-    temperature: ${GROK_TEMPERATURE:0.2}
-    max-tokens: ${GROK_MAX_TOKENS:900}
-    max-anomalies: ${GROK_MAX_ANOMALIES:200}
-    cache-ttl: ${GROK_CACHE_TTL:10m}
+    provider: ${AI_PROVIDER:auto}
+    api-key: ${AI_API_KEY:${GROK_API_KEY:}}
+    base-url: ${AI_BASE_URL:${GROK_BASE_URL:}}
+    model: ${AI_MODEL:${GROK_MODEL:}}
+    connect-timeout: ${AI_CONNECT_TIMEOUT:5s}
+    read-timeout: ${AI_READ_TIMEOUT:60s}
+    temperature: ${AI_TEMPERATURE:0.2}
+    max-tokens: ${AI_MAX_TOKENS:1500}
+    max-anomalies: ${AI_MAX_ANOMALIES:200}
+    cache-ttl: ${AI_CACHE_TTL:10m}
   bootstrap:
     admin-email: ${BOOTSTRAP_ADMIN_EMAIL:}
     admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}

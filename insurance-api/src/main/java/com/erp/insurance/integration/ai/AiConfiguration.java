@@ -15,10 +15,11 @@ public class AiConfiguration {
     @Bean
     AiAssistant aiAssistant(AiProperties properties, RestClient.Builder builder) {
         if (!properties.configured()) {
-            log.info("Análisis con IA desactivado: GROK_API_KEY no está definida");
+            log.info("Análisis con IA desactivado: AI_API_KEY no está definida");
             return new DisabledAiAssistant(properties);
         }
-        log.info("Análisis con IA activo: proveedor={} modelo={}", properties.provider(), properties.model());
-        return new GrokAiAssistant(properties, builder);
+        log.info("Análisis con IA activo: proveedor={} modelo={} url={}", properties.resolvedProvider().displayName(),
+                properties.resolvedModel(), properties.resolvedBaseUrl());
+        return new OpenAiCompatibleAssistant(properties, builder);
     }
 }

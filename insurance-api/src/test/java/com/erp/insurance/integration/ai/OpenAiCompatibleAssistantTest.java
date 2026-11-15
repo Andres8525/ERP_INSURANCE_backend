@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class GrokAiAssistantTest {
+class OpenAiCompatibleAssistantTest {
     private HttpServer server;
     private final AtomicReference<String> authorization = new AtomicReference<>();
     private final AtomicReference<String> requestBody = new AtomicReference<>();
@@ -50,11 +50,11 @@ class GrokAiAssistantTest {
         server.stop(0);
     }
 
-    private GrokAiAssistant assistant() {
+    private OpenAiCompatibleAssistant assistant() {
         AiProperties properties = new AiProperties("grok", "xai-test-key",
                 "http://127.0.0.1:" + server.getAddress().getPort() + "/v1", "grok-4.7",
                 Duration.ofSeconds(2), Duration.ofSeconds(5), 0.2, 300, 50, Duration.ofMinutes(10));
-        return new GrokAiAssistant(properties, RestClient.builder());
+        return new OpenAiCompatibleAssistant(properties, RestClient.builder());
     }
 
     @Test
@@ -105,6 +105,14 @@ class GrokAiAssistantTest {
     }
 
     @Test
+    void reportsUnknownModel() {
+        status = 404;
+        assertThatThrownBy(() -> assistant().complete(new AiPrompt("s", "u")))
+                .hasMessageContaining("grok-4.7")
+                .hasMessageContaining("AI_MODEL");
+    }
+
+    @Test
     void rejectsEmptyChoices() {
         responseBody = "{\"model\":\"grok-4.7\",\"choices\":[]}";
         assertThatThrownBy(() -> assistant().complete(new AiPrompt("s", "u")))
@@ -120,6 +128,6 @@ class GrokAiAssistantTest {
         DisabledAiAssistant disabled = new DisabledAiAssistant(properties);
         assertThat(disabled.available()).isFalse();
         assertThatThrownBy(() -> disabled.complete(new AiPrompt("s", "u")))
-                .hasMessageContaining("GROK_API_KEY");
+                .hasMessageContaining("AI_API_KEY");
     }
 }
